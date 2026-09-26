@@ -3,8 +3,9 @@ import type { Account } from './types'
 
 export const ACCOUNT_COLORS = ['#6d5ae6', '#e0564a', '#1f9d74', '#d98a1c', '#2f7fd8', '#c2489b', '#5f6b7a']
 
-function initials(label: string): string {
-  const words = label.trim().split(/\s+/).filter(Boolean)
+// "Laurenzio-BourdatFinance" → "LB", "Client A" → "CA", "perso" → "PE".
+export function initials(label: string): string {
+  const words = label.trim().split(/[\s._-]+/).filter(Boolean)
   const letters = words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? '?').slice(0, 2)
   return letters.toUpperCase()
 }

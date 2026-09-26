@@ -4,9 +4,10 @@ import { openUrl } from '@tauri-apps/plugin-opener'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { ACCOUNT_COLORS, Avatar, EmptyState, Notice, Section } from '../components'
-import type { Account, AppState, SshTest } from '../types'
+import { normalizeFolder } from '../rules'
+import type { Account, AppState, Rule, SshTest } from '../types'
 
-const blankAccount = (): Account => ({
+export const blankAccount = (): Account => ({
   id: '',
   label: '',
   name: '',
@@ -16,63 +17,162 @@ const blankAccount = (): Account => ({
   color: ACCOUNT_COLORS[0]
 })
 
-export function AccountsView({ state }: { state: AppState }) {
-  const [selectedId, setSelectedId] = useState<string | null>(state.accounts[0]?.id ?? null)
-  const [creating, setCreating] = useState(state.accounts.length === 0)
-  const selected = state.accounts.find((a) => a.id === selectedId) ?? null
+type Tab = 'identity' | 'folders' | 'connections'
+
+// One account: its header (with the global switch) and three tabs, so
+// nothing needs scrolling. Keyed by account id in MainApp, so switching
+// accounts starts clean.
+export function AccountPage({ account, state, onDeleted }: { account: Account; state: AppState; onDeleted: () => void }) {
+  const [tab, setTab] = useState<Tab>('folders')
+  const [message, setMessage] = useState<{ kind: 'error' | 'warn'; text: string } | null>(null)
+  const isGlobal = state.global.accountId === account.id
+  const folderCount = state.rules.filter((r) => r.accountId === account.id).length
+
+  async function makeGlobal(): Promise<void> {
+    try {
+      const warning = await api.switchGlobal(account.id)
+      setMessage(warning ? { kind: 'warn', text: warning } : null)
+    } catch (e) {
+      setMessage({ kind: 'error', text: errorMessage(e) })
+    }
+  }
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'identity', label: 'Identity' },
+    { id: 'folders', label: `Folders (${folderCount})` },
+    { id: 'connections', label: 'Connections' }
+  ]
 
   return (
-    <div className="split">
-      <div className="list-pane">
-        {state.accounts.map((a) => (
+    <div className="account-page">
+      <header className="account-header">
+        <Avatar account={account} size={48} />
+        <div className="account-heading">
+          <h2>{account.label}</h2>
+          <p className="hint">
+            {account.name} · {account.email}
+          </p>
+        </div>
+        {isGlobal ? (
+          <span className="pill-ok" title="Used in every repo that no folder covers">
+            ✓ Global account
+          </span>
+        ) : (
+          <button className="btn" onClick={makeGlobal} title="Use this account in every repo that no folder covers">
+            Make global
+          </button>
+        )}
+      </header>
+      {message && <Notice kind={message.kind}>{message.text}</Notice>}
+
+      <div className="tabs" role="tablist" aria-label="Account sections">
+        {tabs.map((t) => (
           <button
-            key={a.id}
-            className={`list-item ${!creating && a.id === selectedId ? 'is-selected' : ''}`}
-            onClick={() => {
-              setSelectedId(a.id)
-              setCreating(false)
-            }}
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`tab ${tab === t.id ? 'is-active' : ''}`}
+            onClick={() => setTab(t.id)}
           >
-            <Avatar account={a} />
-            <span className="list-text">
-              <span className="list-title">
-                {a.label}
-                {state.global.accountId === a.id && <span className="badge">Global</span>}
-              </span>
-              <span className="list-sub">{a.email}</span>
-            </span>
+            {t.label}
           </button>
         ))}
-        <button className={`list-item list-add ${creating ? 'is-selected' : ''}`} onClick={() => setCreating(true)}>
-          + Add account
-        </button>
       </div>
-      <div className="detail-pane">
-        {creating ? (
-          <AccountEditor
-            key="new"
-            initial={blankAccount()}
-            onSaved={(a) => {
-              setSelectedId(a.id)
-              setCreating(false)
-            }}
-          />
-        ) : selected ? (
-          <>
-            <AccountEditor key={selected.id} initial={selected} onDeleted={() => setSelectedId(null)} />
-            <GlobalSection account={selected} state={state} />
-            <SshSection account={selected} />
-            <HttpsSection account={selected} />
-          </>
-        ) : (
-          <EmptyState title="Pick an account, or add one." />
-        )}
-      </div>
+
+      {tab === 'identity' && <AccountEditor initial={account} onDeleted={onDeleted} />}
+      {tab === 'folders' && <FoldersTab account={account} state={state} />}
+      {tab === 'connections' && (
+        <div className="connections">
+          <HttpsSection account={account} />
+          <SshSection account={account} />
+        </div>
+      )}
     </div>
   )
 }
 
-function AccountEditor({
+// The folder rules pointing at this account.
+function FoldersTab({ account, state }: { account: Account; state: AppState }) {
+  const [error, setError] = useState<string | null>(null)
+  const mine = state.rules.filter((r) => r.accountId === account.id).sort((a, b) => a.folder.localeCompare(b.folder))
+  const global = state.accounts.find((a) => a.id === state.global.accountId)
+
+  async function save(rules: Rule[]): Promise<void> {
+    try {
+      await api.setRules(rules)
+      setError(null)
+    } catch (e) {
+      setError(errorMessage(e))
+    }
+  }
+
+  async function addFolder(): Promise<void> {
+    const picked = await open({ directory: true, title: `Choose a folder for ${account.label}` })
+    if (typeof picked !== 'string') return
+    const folder = normalizeFolder(picked)
+    const existing = state.rules.find((r) => r.folder.toLowerCase() === folder.toLowerCase())
+    if (existing?.accountId === account.id) {
+      setError(`${folder} is already in this account's folders.`)
+      return
+    }
+    if (existing) {
+      const other = state.accounts.find((a) => a.id === existing.accountId)
+      const move = await ask(`${folder} currently uses ${other?.label ?? 'another account'}.\n\nUse ${account.label} for it instead?`, {
+        title: 'Move folder',
+        kind: 'warning',
+        okLabel: 'Move it',
+        cancelLabel: 'Cancel'
+      })
+      if (!move) return
+      await save(state.rules.map((r) => (r === existing ? { ...r, accountId: account.id } : r)))
+      return
+    }
+    await save([...state.rules, { folder, accountId: account.id }])
+  }
+
+  return (
+    <Section title="Folders">
+      <p className="hint">
+        Every repository inside these folders commits and pushes as <strong>{account.label}</strong>. When folders are nested,
+        the deepest one wins.
+      </p>
+      {mine.length === 0 ? (
+        <EmptyState title="No folders yet">
+          <p className="hint">This account is only used while it's the global one.</p>
+        </EmptyState>
+      ) : (
+        <div className="folders">
+          {mine.map((rule) => (
+            <div className="folder-row" key={rule.folder}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+              </svg>
+              <code title={rule.folder}>{rule.folder}</code>
+              <button
+                className="btn btn-small btn-danger-ghost"
+                aria-label={`Remove ${rule.folder}`}
+                onClick={() => save(state.rules.filter((r) => r.folder !== rule.folder))}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="actions">
+        <button className="btn btn-primary" onClick={addFolder}>
+          + Add a folder
+        </button>
+        <span className="hint">
+          Outside every folder: <strong>{global?.label ?? state.global.email ?? 'no identity'}</strong> (global)
+        </span>
+      </div>
+      {error && <Notice kind="error">{error}</Notice>}
+    </Section>
+  )
+}
+
+export function AccountEditor({
   initial,
   onSaved,
   onDeleted
@@ -119,7 +219,7 @@ function AccountEditor({
   }
 
   return (
-    <Section title={isNew ? 'New account' : 'Account'}>
+    <Section title={isNew ? 'New account' : 'Identity'}>
       <div className="form">
         <label>
           <span>Label</span>
@@ -168,36 +268,6 @@ function AccountEditor({
           </button>
         )}
       </div>
-    </Section>
-  )
-}
-
-function GlobalSection({ account, state }: { account: Account; state: AppState }) {
-  const [message, setMessage] = useState<{ kind: 'error' | 'warn'; text: string } | null>(null)
-  const isGlobal = state.global.accountId === account.id
-
-  async function makeGlobal(): Promise<void> {
-    try {
-      const warning = await api.switchGlobal(account.id)
-      setMessage(warning ? { kind: 'warn', text: warning } : null)
-    } catch (e) {
-      setMessage({ kind: 'error', text: errorMessage(e) })
-    }
-  }
-
-  return (
-    <Section
-      title="Global account"
-      hint="Used in every repo that no folder rule covers. Switching also switches the gh CLI when it's logged in to this GitHub user."
-    >
-      {isGlobal ? (
-        <Notice kind="ok">This is the global account.</Notice>
-      ) : (
-        <button className="btn" onClick={makeGlobal}>
-          Make {account.label} the global account
-        </button>
-      )}
-      {message && <Notice kind={message.kind}>{message.text}</Notice>}
     </Section>
   )
 }
