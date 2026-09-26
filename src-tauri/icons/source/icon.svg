@@ -1,0 +1,24 @@
+<!-- Switchly app icon: a toggle switch (the knob = the active account, the dot
+     = the other one) on the app's violet tile. To change it: edit this file, export it to
+     icon.png (1024x1024, transparent), then run `npm run icon` to regenerate
+     every size in src-tauri/icons. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7f6cf2"/>
+      <stop offset="1" stop-color="#5a45d6"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#tile)"/>
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#sheen)"/>
+  <!-- Track -->
+  <rect x="172" y="332" width="680" height="360" rx="180" fill="none" stroke="#ffffff" stroke-width="64"/>
+  <!-- Other account -->
+  <circle cx="352" cy="512" r="52" fill="#ffffff" fill-opacity="0.55"/>
+  <!-- Active account -->
+  <circle cx="672" cy="512" r="118" fill="#ffffff"/>
+</svg>
