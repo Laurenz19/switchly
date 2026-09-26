@@ -18,6 +18,9 @@
   --error-bg: #fbe9e7;
   --info: #3a5bb8;
   --info-bg: #e8eefb;
+  --host-github: #3d3c47;
+  --host-gitlab: #c44d15;
+  --host-bitbucket: #1f63c9;
   --radius: 10px;
   --radius-sm: 7px;
   --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
@@ -46,6 +49,9 @@
   --error-bg: #34191a;
   --info: #93acf2;
   --info-bg: #1b2238;
+  --host-github: #c9c7d6;
+  --host-gitlab: #fc8a4f;
+  --host-bitbucket: #6aa6ff;
   color-scheme: dark;
 }
 
@@ -239,10 +245,15 @@ select:focus-visible {
 }
 
 .account-nav .list-title {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: flex;
+  min-width: 0;
+}
+
+.account-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 .add-account {
@@ -344,12 +355,30 @@ select:focus-visible {
 }
 
 .host-badge {
-  padding: 1px 8px;
-  border: 1px solid var(--border);
+  flex: none;
+  padding: 0 7px;
+  border: 1px solid currentColor;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted);
+  line-height: 17px;
+  color: var(--host-github);
+}
+
+.host-gitlab {
+  color: var(--host-gitlab);
+}
+
+.host-bitbucket {
+  color: var(--host-bitbucket);
+}
+
+/* Room for the badge: the label gives way first. */
+.list-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pill-ok {

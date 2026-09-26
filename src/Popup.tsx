@@ -1,7 +1,7 @@
 import { AppWindow } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage, useAppState } from './api'
-import { Avatar, Notice } from './components'
+import { Avatar, HostBadge, Notice } from './components'
 import { useT } from './i18n'
 
 // The small window above the tray icon: see and switch the global account,
@@ -66,7 +66,10 @@ export function Popup() {
                 >
                   <Avatar account={a} size={26} />
                   <span className="list-text">
-                    <span className="list-title">{a.label}</span>
+                    <span className="list-title">
+                      <span className="list-title-text">{a.label}</span>
+                      <HostBadge host={a.host} />
+                    </span>
                     <span className="list-sub">{a.email}</span>
                   </span>
                   <span className="popup-folders" title={folders.join('\n') || undefined}>

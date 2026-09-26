@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { hostInfo } from './hosts'
 import type { Account } from './types'
 
 export const ACCOUNT_COLORS = ['#6d5ae6', '#e0564a', '#1f9d74', '#d98a1c', '#2f7fd8', '#c2489b', '#5f6b7a']
@@ -20,6 +21,12 @@ export function Avatar({ account, size = 32 }: { account: Pick<Account, 'label' 
       {initials(account.label)}
     </span>
   )
+}
+
+// The account's platform, colored per site so it's recognizable at a glance.
+export function HostBadge({ host }: { host: Account['host'] }) {
+  const info = hostInfo(host)
+  return <span className={`host-badge host-${info.id}`}>{info.name}</span>
 }
 
 export function Notice({ kind, children }: { kind: 'error' | 'warn' | 'ok' | 'info'; children: ReactNode }) {

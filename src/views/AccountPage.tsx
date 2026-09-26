@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
-import { ACCOUNT_COLORS, Avatar, EmptyState, Notice, Section } from '../components'
+import { ACCOUNT_COLORS, Avatar, EmptyState, HostBadge, Notice, Section } from '../components'
 import { HOSTS, hostInfo } from '../hosts'
 import { fill, useT } from '../i18n'
 import { normalizeFolder } from '../rules'
@@ -71,7 +71,7 @@ export function AccountPage({ account, state, onDeleted }: { account: Account; s
         <div className="account-heading">
           <h2>
             {account.label}
-            <span className="host-badge">{hostInfo(account.host).name}</span>
+            <HostBadge host={account.host} />
           </h2>
           <p className="hint">
             {account.name} · {account.email}
