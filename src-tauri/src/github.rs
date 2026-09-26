@@ -1,6 +1,6 @@
 // The GitHub-side tools: the gh CLI (optional) and Git Credential Manager,
 // which ships with Git for Windows and holds the HTTPS logins.
-use crate::proc::{run, stderr, stdout};
+use crate::proc::{command, run, stderr, stdout};
 
 pub fn gh_available() -> bool {
     run("gh", &["--version"], None).map(|o| o.status.success()).unwrap_or(false)
@@ -37,8 +37,18 @@ pub fn gcm_accounts() -> Result<Vec<String>, String> {
 
 // Opens GCM's own sign-in window (browser or device code) and blocks until
 // the user finishes or cancels it. Adds an account; never removes one.
+//
+// The user asked for this prompt, so it overrides settings inherited from the
+// environment that disable prompts (GCM_INTERACTIVE=never,
+// GIT_TERMINAL_PROMPT=0 from a CI-like shell); otherwise GCM fails with
+// "Cannot prompt because user interactivity has been disabled".
 pub fn gcm_login() -> Result<(), String> {
-    let out = run("git", &["credential-manager", "github", "login"], None)?;
+    let out = command("git")
+        .args(["credential-manager", "github", "login"])
+        .env("GCM_INTERACTIVE", "always")
+        .env_remove("GIT_TERMINAL_PROMPT")
+        .output()
+        .map_err(|e| format!("Could not run git: {e}"))?;
     if out.status.success() {
         Ok(())
     } else {
