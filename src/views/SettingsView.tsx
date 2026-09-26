@@ -1,11 +1,14 @@
+import { getVersion } from '@tauri-apps/api/app'
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
-import { Languages, Monitor, Moon, Sun, UserPlus } from 'lucide-react'
+import type { Update } from '@tauri-apps/plugin-updater'
+import { Download, Languages, Monitor, Moon, RefreshCw, Sun, UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { Notice, Section } from '../components'
 import { fill, LANGUAGES, type LangPref, messagesFor, setLangPref, useLangPref, useT } from '../i18n'
 import { type ThemePref, useThemePref } from '../theme'
 import type { AppState } from '../types'
+import { findUpdate, installUpdate, updatesEnabled } from '../updater'
 
 export function SettingsView({ state }: { state: AppState }) {
   const t = useT()
@@ -15,6 +18,10 @@ export function SettingsView({ state }: { state: AppState }) {
   const [gcm, setGcm] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [version, setVersion] = useState('')
+  // undefined: not checked yet; null: up to date.
+  const [update, setUpdate] = useState<Update | null | undefined>(undefined)
+  const [updateBusy, setUpdateBusy] = useState(false)
 
   const themes: { id: ThemePref; label: string; Icon: typeof Moon }[] = [
     { id: 'dark', label: t.settings.dark, Icon: Moon },
@@ -33,6 +40,7 @@ export function SettingsView({ state }: { state: AppState }) {
 
   useEffect(() => {
     isEnabled().then(setAutostart, () => setAutostart(false))
+    getVersion().then(setVersion, () => setVersion(''))
     refreshGcm()
   }, [])
 
@@ -43,6 +51,18 @@ export function SettingsView({ state }: { state: AppState }) {
       setAutostart(await isEnabled())
     } catch (e) {
       setError(errorMessage(e))
+    }
+  }
+
+  async function checkUpdates(): Promise<void> {
+    setUpdateBusy(true)
+    try {
+      setUpdate(await findUpdate())
+      setError(null)
+    } catch (e) {
+      setError(errorMessage(e))
+    } finally {
+      setUpdateBusy(false)
     }
   }
 
@@ -104,6 +124,43 @@ export function SettingsView({ state }: { state: AppState }) {
             ))}
           </div>
         </div>
+      </Section>
+
+      <Section title={t.updates.title}>
+        <p>{t.updates.version(version)}</p>
+        {!updatesEnabled ? (
+          <p className="hint">{t.updates.devNote}</p>
+        ) : (
+          <div className="actions">
+            {update ? (
+              <>
+                <span>{t.updates.available(update.version)}</span>
+                <button
+                  className="btn btn-small btn-primary"
+                  disabled={updateBusy}
+                  onClick={() => {
+                    setUpdateBusy(true)
+                    installUpdate(update).catch((e) => {
+                      setError(errorMessage(e))
+                      setUpdateBusy(false)
+                    })
+                  }}
+                >
+                  <Download size={14} aria-hidden="true" />
+                  {updateBusy ? t.updates.installing : t.updates.install}
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn btn-small" disabled={updateBusy} onClick={checkUpdates}>
+                  <RefreshCw size={14} aria-hidden="true" />
+                  {updateBusy ? t.common.checking : t.updates.check}
+                </button>
+                {update === null && <span className="hint">{t.updates.upToDate}</span>}
+              </>
+            )}
+          </div>
+        )}
       </Section>
 
       <Section title={t.settings.startup}>

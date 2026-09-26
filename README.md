@@ -43,7 +43,10 @@ The installer isn't signed yet. If Windows SmartScreen warns, click **More info*
    - **HTTPS** (`https://...` remotes): sign in once per account through Git Credential Manager, which handles GitHub, GitLab and Bitbucket logins.
    - **SSH** (`git@...` remotes): create a key for the account, click **Add on GitHub/GitLab/Bitbucket** while signed in with that account, then **Test**.
 4. **Pick a global account** with **Make global**. It's used in every repository that no folder covers.
-5. **Check a repository** whenever you're unsure: Switchly shows which identity it will commit and push with, where each setting comes from, and what looks wrong.
+5. **Optional safety nets:**
+   - **Commit signing** (account → **Connections**): signs the account's commits with its SSH key, for a "Verified" badge on GitHub and GitLab. Add the same key on the site a second time, as a signing key.
+   - **Commit guard** (**Settings**): git refuses a commit whose email isn't the one of the account that owns the repository's folder. Skip it once with `git commit --no-verify`.
+6. **Check a repository** whenever you're unsure: Switchly shows which identity it will commit and push with, where each setting comes from, and what looks wrong.
 
 ## Screenshots
 
@@ -64,6 +67,7 @@ The installer isn't signed yet. If Windows SmartScreen warns, click **More info*
 - Closing the window keeps Switchly in the tray. **Settings** can start it with Windows.
 - Switching the global account also switches the `gh` CLI when `gh` is logged in to that user (`gh auth login` once per account).
 - Dark or light theme, in English or French, in **Settings**.
+- **Updates install themselves**: when a new version is out, Switchly offers it at startup (or from **Settings → Updates**). Updates are signed, and Switchly refuses any that isn't.
 
 ## How it works
 
@@ -72,6 +76,7 @@ Switchly only writes standard git configuration, and leaves logins to Git Creden
 - `~/.gitconfig`: the global identity, plus one `includeIf "gitdir/i:<folder>/"` entry per folder.
 - `~/.switchly/<account>.gitconfig`: one file per account with its `user.name`, `user.email`, `core.sshCommand` and the login Git Credential Manager should use on its platform (`credential.https://<site>.username`).
 - `~/.ssh/id_ed25519_switchly_*`: SSH keys you create in Switchly. Deleting an account never deletes its key.
+- `~/.switchly/hooks/`: the commit guard, used through the global `core.hooksPath` while the guard is on. Each hook also runs the repository's own hook of the same name. Switchly won't replace a global hooks folder you set up yourself.
 
 ## Development
 
@@ -81,10 +86,12 @@ Needs Node 22, Rust and the MSVC build tools (see [Tauri's prerequisites](https:
 npm install
 npm run tauri dev     # run the app with hot reload
 npm run check         # type-check and unit tests
-npm run tauri build   # installers in src-tauri/target/release/bundle/
+npm run tauri build   # installers in src-tauri/target/release/bundle/ (see below)
 npm run icon          # regenerate every icon size from src-tauri/icons/source/icon.png
 cd src-tauri && cargo test
 ```
+
+`tauri build` also signs the update packages, so it needs the updater's private key: set `TAURI_SIGNING_PRIVATE_KEY_PATH` to it, or build without update packages with `npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'`.
 
 On an ARM64 PC without the MSVC ARM64 tools, pin the x64 toolchain for this project: `rustup override set stable-x86_64-pc-windows-msvc` in `src-tauri`.
 
@@ -100,4 +107,6 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-GitHub Actions (`.github/workflows/release.yml`) type-checks and tests, builds the x64 installers (`.exe` and `.msi`) and the ARM64 installer, and publishes them as a GitHub Release. The tag is the version, so `tauri.conf.json` doesn't need bumping.
+GitHub Actions (`.github/workflows/release.yml`) type-checks and tests, builds the x64 installers (`.exe` and `.msi`) and the ARM64 installer, and publishes them as a GitHub Release, with the signed update packages and the `latest.json` manifest installed apps check. The tag is the version, so `tauri.conf.json` doesn't need bumping.
+
+The updater's private key is the repository secret `TAURI_SIGNING_PRIVATE_KEY`; its public half is in `tauri.conf.json`. **Keep a copy of the private key**: without it, installed apps can't be updated anymore.

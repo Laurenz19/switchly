@@ -19,6 +19,9 @@ jobs:
     runs-on: windows-latest
     strategy:
       fail-fast: false
+      # One at a time: both jobs update the same latest.json (the updater's
+      # manifest), and in parallel one could overwrite the other's platform.
+      max-parallel: 1
       matrix:
         include:
           - name: x64
@@ -75,6 +78,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the update packages; the app only installs updates signed
+          # with this key (its public half is in tauri.conf.json).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Switchly ${{ github.ref_name }}
@@ -85,6 +92,7 @@ jobs:
             - **Windows on ARM (Snapdragon…)**: `Switchly_${{ steps.version.outputs.version }}_arm64-setup.exe`
 
             The installer isn't signed yet: if Windows SmartScreen warns, click **More info → Run anyway**.
+          updaterJsonPreferNsis: true
           releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --config src-tauri/tauri.release.conf.json

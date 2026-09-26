@@ -201,6 +201,17 @@ export const fr: Messages = {
     changesKeys: '{file} : les clés que tu crées ici. Supprimer un compte ne supprime jamais sa clé.'
   },
 
+  updates: {
+    title: 'Mises à jour',
+    version: (v) => `Switchly ${v}`,
+    check: 'Rechercher des mises à jour',
+    upToDate: 'Switchly est à jour.',
+    available: (v) => `Switchly ${v} est disponible.`,
+    install: 'Mettre à jour et redémarrer',
+    installing: 'Mise à jour…',
+    devNote: 'Les mises à jour sont désactivées en développement.'
+  },
+
   popup: {
     globalAccount: 'Compte global',
     noGlobal: "Aucune identité globale n'est définie.",

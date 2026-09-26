@@ -203,6 +203,17 @@ export const en = {
     changesKeys: "{file}: keys you create here. Deleting an account never deletes its key."
   },
 
+  updates: {
+    title: 'Updates',
+    version: (v: string) => `Switchly ${v}`,
+    check: 'Check for updates',
+    upToDate: "You're up to date.",
+    available: (v: string) => `Switchly ${v} is available.`,
+    install: 'Update and restart',
+    installing: 'Updating…',
+    devNote: 'Updates are off in development builds.'
+  },
+
   popup: {
     globalAccount: 'Global account',
     noGlobal: 'No global identity set.',

@@ -322,6 +322,19 @@ select:focus-visible {
   padding: 22px 28px;
 }
 
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 820px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--bg-selected);
+  font-weight: 600;
+}
+
 /* Account page ----------------------------------------------------------- */
 
 .account-page {

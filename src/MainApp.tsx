@@ -1,8 +1,11 @@
 import { Search, Settings, UserPlus } from 'lucide-react'
-import { useState } from 'react'
+import type { Update } from '@tauri-apps/plugin-updater'
+import { Download } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useAppState } from './api'
 import { Avatar, HostBadge, Notice } from './components'
 import { useT } from './i18n'
+import { findUpdate, installUpdate } from './updater'
 import { AccountEditor, AccountPage, blankAccount } from './views/AccountPage'
 import { DiagnoseView } from './views/DiagnoseView'
 import { SettingsView } from './views/SettingsView'
@@ -15,6 +18,13 @@ export function MainApp() {
   const t = useT()
   const { state, error } = useAppState()
   const [route, setRoute] = useState<Route | null>(null)
+  const [update, setUpdate] = useState<Update | null>(null)
+  const [updating, setUpdating] = useState(false)
+
+  // Once per launch; offline or no release yet just means no banner.
+  useEffect(() => {
+    findUpdate().then(setUpdate, () => setUpdate(null))
+  }, [])
 
   // Until the user picks something, show the first account (or the form to
   // create one); a deleted account falls back the same way.
@@ -76,6 +86,22 @@ export function MainApp() {
 
       <main className="content">
         {error && <Notice kind="error">{error}</Notice>}
+        {update && (
+          <div className="update-banner">
+            <span>{t.updates.available(update.version)}</span>
+            <button
+              className="btn btn-small btn-primary"
+              disabled={updating}
+              onClick={() => {
+                setUpdating(true)
+                installUpdate(update).catch(() => setUpdating(false))
+              }}
+            >
+              <Download size={14} aria-hidden="true" />
+              {updating ? t.updates.installing : t.updates.install}
+            </button>
+          </div>
+        )}
         {state && account && (
           <AccountPage key={account.id} account={account} state={state} onDeleted={() => setRoute(null)} />
         )}
