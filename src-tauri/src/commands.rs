@@ -1,0 +1,238 @@
+// The Tauri commands behind src/api.ts. Every change is saved to config.json,
+// applied to git, then broadcast ("state-changed") to both windows and the tray.
+use crate::model::{Account, AppState, GlobalIdentity, RepoFacts, Rule, SshTest};
+use crate::store::Store;
+use crate::{git, github, ssh, tray};
+use std::path::Path;
+use std::sync::{Mutex, MutexGuard};
+use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::{AppHandle, Emitter, Manager, State};
+
+pub type SharedStore = Mutex<Store>;
+
+fn lock<'a>(store: &'a SharedStore) -> Result<MutexGuard<'a, Store>, String> {
+    store.lock().map_err(|_| "Switchly's state is unavailable; restart the app.".to_string())
+}
+
+fn new_id() -> String {
+    let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+    format!("{nanos:x}")
+}
+
+fn find_account(store: &Store, id: &str) -> Result<Account, String> {
+    store.config.accounts.iter().find(|a| a.id == id).cloned().ok_or_else(|| "That account no longer exists.".into())
+}
+
+fn global_account_id(store: &Store, email: Option<&str>) -> Option<String> {
+    let email = email?;
+    store.config.accounts.iter().find(|a| a.email.eq_ignore_ascii_case(email)).map(|a| a.id.clone())
+}
+
+// Read fresh from git each time, so changes made outside Switchly show up.
+pub fn build_state(store: &Store) -> AppState {
+    let (name, email) = git::global_identity().unwrap_or((None, None));
+    let account_id = global_account_id(store, email.as_deref());
+    let gh_available = github::gh_available();
+    AppState {
+        accounts: store.config.accounts.clone(),
+        rules: store.config.rules.clone(),
+        global: GlobalIdentity { name, email, account_id },
+        gh_user: if gh_available { github::gh_active_user() } else { None },
+        gh_available,
+    }
+}
+
+fn changed(app: &AppHandle, store: &Store) -> AppState {
+    let state = build_state(store);
+    tray::refresh(app, &state);
+    let _ = app.emit("state-changed", &state);
+    state
+}
+
+#[tauri::command]
+pub fn get_state(store: State<'_, SharedStore>) -> Result<AppState, String> {
+    Ok(build_state(&*lock(&store)?))
+}
+
+#[tauri::command]
+pub fn save_account(app: AppHandle, store: State<'_, SharedStore>, account: Account) -> Result<Account, String> {
+    let mut s = lock(&store)?;
+    let mut account = Account {
+        label: account.label.trim().to_string(),
+        name: account.name.trim().to_string(),
+        email: account.email.trim().to_string(),
+        github_user: account.github_user.trim().to_string(),
+        ..account
+    };
+    if account.label.is_empty() || account.name.is_empty() || account.email.is_empty() {
+        return Err("Label, name and email are required.".into());
+    }
+    if s.config.accounts.iter().any(|a| a.id != account.id && a.email.eq_ignore_ascii_case(&account.email)) {
+        return Err(format!("Another account already uses {}.", account.email));
+    }
+
+    // If this account is the global identity, the global config follows the edit.
+    let (_, global_email) = git::global_identity()?;
+    let was_global = !account.id.is_empty() && global_account_id(&s, global_email.as_deref()).as_deref() == Some(&account.id);
+
+    if account.id.is_empty() {
+        account.id = new_id();
+        s.config.accounts.push(account.clone());
+    } else {
+        let slot = s.config.accounts.iter_mut().find(|a| a.id == account.id).ok_or("That account no longer exists.")?;
+        *slot = account.clone();
+    }
+    git::write_account_file(&s.managed_dir, &account)?;
+    s.save()?;
+    if was_global {
+        git::switch_global(&account)?;
+    }
+    changed(&app, &s);
+    Ok(account)
+}
+
+#[tauri::command]
+pub fn delete_account(app: AppHandle, store: State<'_, SharedStore>, id: String) -> Result<(), String> {
+    let mut s = lock(&store)?;
+    s.config.accounts.retain(|a| a.id != id);
+    s.config.rules.retain(|r| r.account_id != id);
+    git::sync_rules(&s.managed_dir, &s.config.rules)?;
+    git::remove_account_file(&s.managed_dir, &id);
+    s.save()?;
+    changed(&app, &s);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_rules(app: AppHandle, store: State<'_, SharedStore>, rules: Vec<Rule>) -> Result<(), String> {
+    let mut s = lock(&store)?;
+    let mut seen = std::collections::HashSet::new();
+    for rule in &rules {
+        let folder = git::normalize_folder(&rule.folder);
+        if folder == "/" {
+            return Err("A rule needs a folder.".into());
+        }
+        if !seen.insert(folder.to_lowercase()) {
+            return Err(format!("{folder} has more than one rule."));
+        }
+        // Make sure every file a rule points at exists before git includes it.
+        git::write_account_file(&s.managed_dir, &find_account(&s, &rule.account_id)?)?;
+    }
+    let rules: Vec<Rule> =
+        rules.into_iter().map(|r| Rule { folder: git::normalize_folder(&r.folder), account_id: r.account_id }).collect();
+    git::sync_rules(&s.managed_dir, &rules)?;
+    s.config.rules = rules;
+    s.save()?;
+    changed(&app, &s);
+    Ok(())
+}
+
+// Shared by the command and the tray menu. Returns a warning when git
+// switched but gh couldn't follow.
+pub fn switch_to(app: &AppHandle, id: &str) -> Result<Option<String>, String> {
+    let store = app.state::<SharedStore>();
+    let s = lock(&store)?;
+    let account = find_account(&s, id)?;
+    git::write_account_file(&s.managed_dir, &account)?;
+    git::switch_global(&account)?;
+    let warning = if !account.github_user.is_empty() && github::gh_available() {
+        github::gh_switch(&account.github_user).err()
+    } else {
+        None
+    };
+    changed(app, &s);
+    Ok(warning)
+}
+
+#[tauri::command]
+pub fn switch_global(app: AppHandle, id: String) -> Result<Option<String>, String> {
+    switch_to(&app, &id)
+}
+
+fn set_key(app: &AppHandle, s: &mut Store, id: &str, key: Option<String>) -> Result<(), String> {
+    let (_, global_email) = git::global_identity()?;
+    let was_global = global_account_id(s, global_email.as_deref()).as_deref() == Some(id);
+    let slot = s.config.accounts.iter_mut().find(|a| a.id == id).ok_or("That account no longer exists.")?;
+    slot.ssh_key_path = key.map(|k| k.replace('\\', "/"));
+    let account = slot.clone();
+    git::write_account_file(&s.managed_dir, &account)?;
+    s.save()?;
+    if was_global {
+        git::switch_global(&account)?;
+    }
+    changed(app, s);
+    Ok(())
+}
+
+// Creates a dedicated key for the account and returns its public half, to be
+// pasted into GitHub.
+#[tauri::command]
+pub fn generate_ssh_key(app: AppHandle, store: State<'_, SharedStore>, id: String) -> Result<String, String> {
+    let mut s = lock(&store)?;
+    let account = find_account(&s, &id)?;
+    let path = ssh::generate_key(&s.home, &id, &account.email)?;
+    let path = path.to_string_lossy().to_string();
+    set_key(&app, &mut s, &id, Some(path.clone()))?;
+    ssh::public_key(&path)
+}
+
+// Uses an existing private key (e.g. ~/.ssh/id_ed25519), or none.
+#[tauri::command]
+pub fn set_ssh_key(app: AppHandle, store: State<'_, SharedStore>, id: String, path: Option<String>) -> Result<(), String> {
+    if let Some(p) = &path {
+        if !Path::new(p).is_file() {
+            return Err(format!("{p} isn't a file."));
+        }
+        if p.ends_with(".pub") {
+            return Err("Pick the private key (the file without .pub).".into());
+        }
+    }
+    let mut s = lock(&store)?;
+    set_key(&app, &mut s, &id, path)
+}
+
+#[tauri::command]
+pub fn public_key(store: State<'_, SharedStore>, id: String) -> Result<Option<String>, String> {
+    let s = lock(&store)?;
+    match find_account(&s, &id)?.ssh_key_path {
+        Some(path) => ssh::public_key(&path).map(Some),
+        None => Ok(None),
+    }
+}
+
+// Network call: the lock is released before connecting.
+#[tauri::command]
+pub async fn test_ssh(store: State<'_, SharedStore>, id: String) -> Result<SshTest, String> {
+    let key = find_account(&*lock(&store)?, &id)?.ssh_key_path;
+    tauri::async_runtime::spawn_blocking(move || ssh::test_connection(key.as_deref()))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn gcm_accounts() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(github::gcm_accounts).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn gcm_login() -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(github::gcm_login).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn diagnose_repo(path: String) -> Result<RepoFacts, String> {
+    tauri::async_runtime::spawn_blocking(move || git::repo_facts(Path::new(&path)))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub fn open_main(app: AppHandle) {
+    tray::hide_popup(&app);
+    tray::show_main(&app);
+}
+
+#[tauri::command]
+pub fn hide_popup(app: AppHandle) {
+    tray::hide_popup(&app);
+}
