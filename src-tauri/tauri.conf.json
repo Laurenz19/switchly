@@ -19,7 +19,8 @@
         "minWidth": 780,
         "minHeight": 520,
         "center": true,
-        "visible": false
+        "visible": false,
+        "backgroundColor": "#141319"
       },
       {
         "label": "popup",
@@ -31,7 +32,8 @@
         "resizable": false,
         "skipTaskbar": true,
         "alwaysOnTop": true,
-        "shadow": true
+        "shadow": true,
+        "backgroundColor": "#141319"
       }
     ],
     "security": {
@@ -40,7 +42,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis",
+      "msi"
+    ],
     "publisher": "Laurenz19",
     "shortDescription": "Switch GitHub accounts per folder",
     "icon": [

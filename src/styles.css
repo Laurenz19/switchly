@@ -25,29 +25,28 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #17161c;
-    --bg-pane: #1f1e26;
-    --bg-sidebar: #1b1a21;
-    --bg-hover: #2a2933;
-    --bg-selected: #302a55;
-    --border: #34333e;
-    --text: #ecebf2;
-    --text-muted: #9d9bab;
-    --accent: #8b7bf2;
-    --accent-hover: #9d8ff5;
-    --accent-text: #15131f;
-    --ok: #4fc58f;
-    --ok-bg: #173026;
-    --warn: #efb45a;
-    --warn-bg: #352a17;
-    --error: #f0786c;
-    --error-bg: #3a1f1c;
-    --info: #8eaaf0;
-    --info-bg: #1e2640;
-    color-scheme: dark;
-  }
+/* The default (see theme.ts). "system" is resolved to dark or light there. */
+:root[data-theme='dark'] {
+  --bg: #141319;
+  --bg-pane: #1c1b22;
+  --bg-sidebar: #0f0e13;
+  --bg-hover: #25242d;
+  --bg-selected: #2c2650;
+  --border: #2c2b35;
+  --text: #eceaf3;
+  --text-muted: #a3a1b2;
+  --accent: #8f80f5;
+  --accent-hover: #a295f7;
+  --accent-text: #16132a;
+  --ok: #52c795;
+  --ok-bg: #15291f;
+  --warn: #efb45a;
+  --warn-bg: #2f2415;
+  --error: #f27d71;
+  --error-bg: #34191a;
+  --info: #93acf2;
+  --info-bg: #1b2238;
+  color-scheme: dark;
 }
 
 * {
@@ -84,6 +83,26 @@ code {
 button {
   font: inherit;
   color: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
 }
 
 /* Buttons ---------------------------------------------------------------- */
@@ -642,6 +661,39 @@ select {
 .identity-label {
   font-weight: 700;
   font-size: 15px;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  width: fit-content;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.segment:hover {
+  color: var(--text);
+}
+
+.segment.is-active {
+  background: var(--bg-selected);
+  color: var(--text);
+  font-weight: 600;
 }
 
 .toggle-row {

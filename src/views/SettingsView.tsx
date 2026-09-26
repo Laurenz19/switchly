@@ -1,11 +1,19 @@
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
-import { UserPlus } from 'lucide-react'
+import { Monitor, Moon, Sun, UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { Notice, Section } from '../components'
+import { type ThemePref, useThemePref } from '../theme'
 import type { AppState } from '../types'
 
+const THEMES: { id: ThemePref; label: string; Icon: typeof Moon }[] = [
+  { id: 'dark', label: 'Dark', Icon: Moon },
+  { id: 'light', label: 'Light', Icon: Sun },
+  { id: 'system', label: 'Match Windows', Icon: Monitor }
+]
+
 export function SettingsView({ state }: { state: AppState }) {
+  const [theme, setTheme] = useThemePref()
   const [autostart, setAutostart] = useState<boolean | null>(null)
   const [gcm, setGcm] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +52,23 @@ export function SettingsView({ state }: { state: AppState }) {
 
   return (
     <div className="page">
+      <Section title="Appearance">
+        <div className="segmented" role="radiogroup" aria-label="Theme">
+          {THEMES.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              role="radio"
+              aria-checked={theme === id}
+              className={`segment ${theme === id ? 'is-active' : ''}`}
+              onClick={() => setTheme(id)}
+            >
+              <Icon size={15} aria-hidden="true" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </Section>
+
       <Section title="Startup">
         <label className="toggle-row">
           <input type="checkbox" checked={!!autostart} disabled={autostart === null} onChange={toggleAutostart} />
