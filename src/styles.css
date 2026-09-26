@@ -72,13 +72,11 @@ body {
 input,
 select,
 code,
-.key-box,
 .hint {
   user-select: text;
 }
 
-code,
-.mono-line {
+code {
   font-family: var(--mono);
   font-size: 12.5px;
 }
@@ -358,6 +356,65 @@ select:focus-visible {
   align-items: start;
 }
 
+.connections .section {
+  gap: 10px;
+}
+
+.key-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.key-label {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.key-summary code,
+.key-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.key-value {
+  display: block;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.link-btn {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.link-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.link-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .folders {
   display: flex;
   flex-direction: column;
@@ -567,25 +624,6 @@ select {
 .identity-label {
   font-weight: 700;
   font-size: 15px;
-}
-
-.mono-line {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.key-box {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
-
-.key-box code {
-  overflow-wrap: anywhere;
 }
 
 .toggle-row {

@@ -309,16 +309,22 @@ function SshSection({ account }: { account: Account }) {
     })
   const testConnection = (): Promise<void> => run(async () => setTest(await api.testSsh(account.id)))
 
+  const githubUser = account.githubUser || 'this account'
+
   return (
-    <Section
-      title="SSH key"
-      hint="For remotes like git@github.com:owner/repo.git. Each GitHub account needs its own key: GitHub refuses a key that's already on another account."
-    >
-      <p className="mono-line">{account.sshKeyPath ?? 'Default key (~/.ssh/id_*)'}</p>
+    <Section title="SSH key" hint="For git@github.com:… remotes. Each GitHub account needs its own key.">
+      <div className="key-summary" title={account.sshKeyPath ?? undefined}>
+        <span className="key-label">{account.sshKeyPath ? 'Key' : 'Uses'}</span>
+        <code>{account.sshKeyPath ? shortenHome(account.sshKeyPath) : 'your default key (~/.ssh/id_*)'}</code>
+      </div>
       {publicKey && (
-        <div className="key-box">
-          <code>{publicKey}</code>
-          <div className="actions">
+        <code className="key-value" title={publicKey}>
+          {publicKey}
+        </code>
+      )}
+      <div className="actions">
+        {publicKey && (
+          <>
             <button
               className="btn btn-small"
               onClick={() => {
@@ -327,32 +333,36 @@ function SshSection({ account }: { account: Account }) {
                 setTimeout(() => setCopied(false), 1500)
               }}
             >
-              {copied ? 'Copied' : 'Copy public key'}
+              {copied ? 'Copied' : 'Copy'}
             </button>
-            <button className="btn btn-small" onClick={() => openUrl('https://github.com/settings/ssh/new')}>
-              Add it on GitHub
+            <button
+              className="btn btn-small"
+              title={`Sign in to GitHub as ${githubUser} first`}
+              onClick={() => openUrl('https://github.com/settings/ssh/new')}
+            >
+              Add on GitHub
             </button>
-          </div>
-          <p className="hint">Sign in to GitHub as {account.githubUser || 'this account'} before adding it.</p>
-        </div>
-      )}
-      <div className="actions">
+          </>
+        )}
         {!account.sshKeyPath && (
-          <button className="btn" disabled={busy} onClick={generate}>
-            Create a key for this account
+          <button className="btn btn-small btn-primary" disabled={busy} onClick={generate}>
+            Create a key
           </button>
         )}
-        <button className="btn" disabled={busy} onClick={pickExisting}>
-          Use an existing key…
+        <button className="btn btn-small" disabled={busy} onClick={testConnection}>
+          {busy ? 'Testing…' : 'Test'}
+        </button>
+      </div>
+      {publicKey && <p className="hint">Add it while signed in to GitHub as {githubUser}.</p>}
+      <div className="link-actions">
+        <button className="link-btn" disabled={busy} onClick={pickExisting}>
+          Use another key…
         </button>
         {account.sshKeyPath && (
-          <button className="btn" disabled={busy} onClick={useDefault}>
+          <button className="link-btn" disabled={busy} onClick={useDefault}>
             Use the default key
           </button>
         )}
-        <button className="btn" disabled={busy} onClick={testConnection}>
-          {busy ? 'Working…' : 'Test connection'}
-        </button>
       </div>
       {test && (
         <Notice kind={test.ok ? (sameUser(test.githubUser, account.githubUser) ? 'ok' : 'warn') : 'error'}>
@@ -364,6 +374,11 @@ function SshSection({ account }: { account: Account }) {
       {error && <Notice kind="error">{error}</Notice>}
     </Section>
   )
+}
+
+// "C:/Users/me/.ssh/id_x" → "~/.ssh/id_x"
+function shortenHome(path: string): string {
+  return path.replace(/\\/g, '/').replace(/^[A-Za-z]:\/Users\/[^/]+/, '~')
 }
 
 function sameUser(a: string | null, b: string): boolean {
@@ -396,28 +411,22 @@ function HttpsSection({ account }: { account: Account }) {
   const signedIn = accounts?.some((a) => a.toLowerCase() === account.githubUser.toLowerCase()) ?? false
 
   return (
-    <Section
-      title="HTTPS login"
-      hint="For remotes like https://github.com/owner/repo.git. Git Credential Manager keeps one login per GitHub account; Switchly tells it which one to use."
-    >
+    <Section title="HTTPS login" hint="For https://github.com/… remotes, through Git Credential Manager.">
       {!account.githubUser ? (
-        <Notice kind="info">Set a GitHub username above to pin this account's HTTPS login.</Notice>
+        <Notice kind="info">Add a GitHub username in Identity to pin this account's login.</Notice>
       ) : accounts === null ? (
         <p className="hint">Checking…</p>
       ) : signedIn ? (
-        <Notice kind="ok">Git Credential Manager is signed in as {account.githubUser}.</Notice>
+        <Notice kind="ok">Signed in as {account.githubUser}</Notice>
       ) : (
         <>
-          <Notice kind="warn">Git Credential Manager isn't signed in as {account.githubUser} yet.</Notice>
+          <Notice kind="warn">Not signed in as {account.githubUser} yet</Notice>
           <div className="actions">
-            <button className="btn" disabled={busy} onClick={login}>
-              {busy ? 'Waiting for the sign-in window…' : `Sign in as ${account.githubUser}`}
+            <button className="btn btn-small btn-primary" disabled={busy} onClick={login}>
+              {busy ? 'Waiting for sign-in…' : `Sign in as ${account.githubUser}`}
             </button>
           </div>
-          <p className="hint">
-            A GitHub sign-in window opens. If your browser is already signed in to another GitHub account, switch accounts there
-            first.
-          </p>
+          <p className="hint">If your browser is signed in to another GitHub account, switch there first.</p>
         </>
       )}
       {error && <Notice kind="error">{error}</Notice>}
