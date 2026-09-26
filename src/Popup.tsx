@@ -2,10 +2,12 @@ import { AppWindow } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage, useAppState } from './api'
 import { Avatar, Notice } from './components'
+import { useT } from './i18n'
 
 // The small window above the tray icon: see and switch the global account,
 // with each account's folder count.
 export function Popup() {
+  const t = useT()
   const { state } = useAppState()
   const [message, setMessage] = useState<{ kind: 'error' | 'warn'; text: string } | null>(null)
 
@@ -32,7 +34,7 @@ export function Popup() {
   return (
     <div className="popup">
       <header className="popup-header">
-        <span className="popup-caption">Global account</span>
+        <span className="popup-caption">{t.popup.globalAccount}</span>
         {global ? (
           <div className="identity">
             <Avatar account={global} size={36} />
@@ -42,16 +44,16 @@ export function Popup() {
             </div>
           </div>
         ) : (
-          <div className="hint">{state.global.email ?? 'No global identity set.'}</div>
+          <div className="hint">{state.global.email ?? t.popup.noGlobal}</div>
         )}
       </header>
 
       <div className="popup-body">
         {state.accounts.length === 0 ? (
-          <p className="hint">No accounts yet. Open Switchly to add one.</p>
+          <p className="hint">{t.popup.noAccounts}</p>
         ) : (
           <>
-            <span className="popup-caption">Switch to</span>
+            <span className="popup-caption">{t.popup.switchTo}</span>
             {state.accounts.map((a) => {
               // Only the count: the folders themselves live in the main
               // window's Folders tab, so the popup stays short.
@@ -68,7 +70,7 @@ export function Popup() {
                     <span className="list-sub">{a.email}</span>
                   </span>
                   <span className="popup-folders" title={folders.join('\n') || undefined}>
-                    {folders.length === 1 ? '1 folder' : `${folders.length} folders`}
+                    {t.popup.folderCount(folders.length)}
                   </span>
                   <span className="check" aria-hidden={a.id !== state.global.accountId}>
                     {a.id === state.global.accountId ? '✓' : ''}
@@ -84,7 +86,7 @@ export function Popup() {
       <footer className="popup-footer">
         <button className="btn btn-small" onClick={() => api.openMain()}>
           <AppWindow size={14} aria-hidden="true" />
-          Open Switchly
+          {t.popup.open}
         </button>
       </footer>
     </div>

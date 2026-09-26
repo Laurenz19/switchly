@@ -663,6 +663,18 @@ select {
   font-size: 15px;
 }
 
+.setting-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.setting-label {
+  width: 90px;
+  font-weight: 600;
+}
+
 .segmented {
   display: inline-flex;
   gap: 2px;

@@ -29,8 +29,9 @@ pub fn run() {
             let handle = app.handle();
             let store = store::Store::load(&handle.path().app_config_dir()?, handle.path().home_dir()?);
             let state = commands::build_state(&store);
+            let lang = commands::language(&store).to_string();
             app.manage(Mutex::new(store));
-            tray::create(handle, &state)?;
+            tray::create(handle, &state, &lang)?;
             if !std::env::args().any(|a| a == HIDDEN_FLAG) {
                 tray::show_main(handle);
             }
@@ -62,6 +63,7 @@ pub fn run() {
             commands::gcm_accounts,
             commands::gcm_login,
             commands::diagnose_repo,
+            commands::set_language,
             commands::open_main,
             commands::hide_popup,
         ])

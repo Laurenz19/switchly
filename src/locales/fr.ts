@@ -1,0 +1,191 @@
+import type { Messages } from './en'
+
+const folderCount = (n: number): string => (n <= 1 ? `${n} dossier` : `${n} dossiers`)
+
+export const fr: Messages = {
+  languageName: 'Français',
+
+  common: {
+    cancel: 'Annuler',
+    checking: 'Vérification…'
+  },
+
+  nav: {
+    accounts: 'Comptes',
+    addAccount: 'Ajouter un compte',
+    checkRepo: 'Vérifier un repo',
+    settings: 'Paramètres',
+    global: 'Global',
+    folderCount
+  },
+
+  account: {
+    sections: 'Sections du compte',
+    identity: 'Identité',
+    folders: (n) => `Dossiers (${n})`,
+    connections: 'Connexions',
+    globalPill: '✓ Compte global',
+    globalPillTitle: "Utilisé dans tous les repos qu'aucun dossier ne couvre",
+    makeGlobal: 'Rendre global',
+    makeGlobalTitle: "Utiliser ce compte dans tous les repos qu'aucun dossier ne couvre"
+  },
+
+  folders: {
+    title: 'Dossiers',
+    intro:
+      "Chaque repository de ces dossiers commit et push en tant que {label}. Quand des dossiers sont imbriqués, c'est le plus profond qui l'emporte.",
+    emptyTitle: 'Aucun dossier pour le moment',
+    emptyHint: "Ce compte n'est utilisé que lorsqu'il est le compte global.",
+    remove: 'Retirer',
+    removeLabel: (folder) => `Retirer ${folder}`,
+    add: 'Ajouter un dossier',
+    outside: 'En dehors de ces dossiers : {label} (global)',
+    noIdentity: 'aucune identité',
+    chooseTitle: (label) => `Choisir un dossier pour ${label}`,
+    alreadyHere: (folder) => `${folder} fait déjà partie des dossiers de ce compte.`,
+    moveTitle: 'Déplacer le dossier',
+    moveBody: (folder, other, label) => `${folder} utilise actuellement ${other}.\n\nUtiliser ${label} à la place ?`,
+    moveOk: 'Déplacer',
+    anotherAccount: 'un autre compte'
+  },
+
+  editor: {
+    newTitle: 'Nouveau compte',
+    title: 'Identité',
+    label: 'Nom du compte',
+    labelPlaceholder: 'Perso, Client A…',
+    name: 'Nom des commits',
+    namePlaceholder: 'Jeanne Dupont',
+    email: 'Email des commits',
+    emailPlaceholder: 'jeanne@exemple.com',
+    githubUser: "Nom d'utilisateur GitHub",
+    githubUserPlaceholder: 'Facultatif : sert à se connecter pour les push HTTPS et gh',
+    color: 'Couleur',
+    colorLabel: (c) => `Couleur ${c}`,
+    add: 'Ajouter le compte',
+    save: 'Enregistrer',
+    saved: 'Enregistré',
+    delete: 'Supprimer le compte',
+    deleteTitle: 'Supprimer le compte',
+    deleteBody: (label) =>
+      `Supprimer « ${label} » ?\n\nSes dossiers sont retirés aussi. Sa clé SSH reste sur le disque, et l'identité git globale ne change pas.`,
+    deleteOk: 'Supprimer'
+  },
+
+  ssh: {
+    title: 'Clé SSH',
+    hint: 'Pour les remotes git@github.com:… Chaque compte GitHub a besoin de sa propre clé.',
+    key: 'Clé',
+    uses: 'Utilise',
+    defaultKey: 'ta clé par défaut (~/.ssh/id_*)',
+    copy: 'Copier',
+    copied: 'Copiée',
+    addOnGithub: 'Ajouter sur GitHub',
+    addOnGithubTitle: (user) => `Connecte-toi d'abord à GitHub en tant que ${user}`,
+    create: 'Créer une clé',
+    test: 'Tester',
+    testing: 'Test en cours…',
+    addWhileSignedIn: (user) => `Ajoute-la en étant connecté à GitHub en tant que ${user}.`,
+    useAnother: 'Utiliser une autre clé…',
+    useDefault: 'Utiliser la clé par défaut',
+    pickTitle: 'Choisir une clé SSH privée',
+    thisAccount: 'ce compte',
+    belongsTo: (actual, expected) => ` Cette clé appartient à ${actual}, pas à ${expected}.`
+  },
+
+  https: {
+    title: 'Connexion HTTPS',
+    hint: 'Pour les remotes https://github.com/…, via Git Credential Manager.',
+    noUser: "Ajoute un nom d'utilisateur GitHub dans Identité pour fixer la connexion de ce compte.",
+    signedIn: (user) => `Connecté en tant que ${user}`,
+    notSignedIn: (user) => `Pas encore connecté en tant que ${user}`,
+    signIn: (user) => `Se connecter en tant que ${user}`,
+    waiting: 'En attente de la connexion…',
+    switchBrowser: "Si ton navigateur est connecté à un autre compte GitHub, change de compte d'abord."
+  },
+
+  diagnose: {
+    title: 'Vérifier un repository',
+    hint: 'Voir quelle identité les commits et les push de ce repository vont utiliser, et pourquoi.',
+    choose: 'Choisir un repository…',
+    again: 'Vérifier à nouveau',
+    pickTitle: 'Choisir un repository',
+    details: 'Détails',
+    name: 'Nom',
+    email: 'Email',
+    sshCommand: 'Commande SSH',
+    httpsLogin: 'Connexion HTTPS',
+    remote: 'Remote',
+    defaultSsh: 'par défaut (~/.ssh/id_*)',
+    notPinned: 'non fixée',
+    none: 'aucun',
+    notSet: 'non défini',
+    from: (source) => ` · depuis ${source}`,
+    originRule: (label) => `dossier (${label})`,
+    deletedAccount: 'compte supprimé',
+    originLocal: 'ce repo (.git/config)',
+    originGlobal: 'global (~/.gitconfig)'
+  },
+
+  findings: {
+    notRepo: "Ce dossier n'est pas un repository git.",
+    noEmail: "Aucun email de commit n'est défini.",
+    noEmailDetail: 'Git refusera de commiter tant que user.email ne sera pas défini.',
+    localOverride: (email) => `Ce repo remplace l'email en local (${email}).`,
+    localOverrideRule: (label) =>
+      `Son propre .git/config l'emporte sur le dossier de ${label}. Pour le retirer : git config --unset user.email`,
+    localOverrideNoRule: "Son propre .git/config définit user.email : aucun dossier ni switch global ne s'applique ici.",
+    ruleOk: (label, email, folder) => `Les commits utilisent ${label} (${email}), grâce au dossier ${folder}.`,
+    ruleLoses: (label, email) => `Un dossier indique ${label}, mais les commits utiliseraient ${email}.`,
+    ruleLosesDetail: "Un autre fichier de config l'emporte sur le dossier. Regarde l'origine ci-dessous.",
+    noRule: (who) => `Aucun dossier ne couvre ce repo : les commits utilisent l'identité globale (${who}).`,
+    noRuleDetail: 'Ajoute ce dossier à un compte pour le lier à ce repo.',
+    otherEmails: "Des commits récents utilisent d'autres emails.",
+    otherEmailsDetail: (list) =>
+      `${list}. Normal sur un repo partagé ; sur ton propre repo, ils ont été faits avec la mauvaise identité.`,
+    sshDedicated: 'Les push SSH utilisent une clé dédiée.',
+    sshDefaultNotAccount: 'Les push SSH utilisent ta clé par défaut, pas celle de ce compte.',
+    sshDefault: 'Les push SSH utilisent ta clé par défaut (~/.ssh/id_*).',
+    httpsWrongUser: (user, expected) => `Les push se connectent en tant que ${user}, mais le compte GitHub est ${expected}.`,
+    httpsOk: (user) => `Les push HTTPS se connectent en tant que ${user}.`,
+    httpsNone: "Aucun compte GitHub n'est fixé pour les push HTTPS.",
+    httpsNoneDetail: "Git Credential Manager utilisera son compte par défaut, ou demandera s'il en a plusieurs.",
+    noRemote: "Ce repo n'a pas de remote « origin »."
+  },
+
+  settings: {
+    appearance: 'Apparence',
+    theme: 'Thème',
+    dark: 'Sombre',
+    light: 'Clair',
+    matchWindows: 'Comme Windows',
+    language: 'Langue',
+    windowsLanguage: 'Langue de Windows',
+    startup: 'Démarrage',
+    startWithWindows: 'Lancer Switchly avec Windows, dans la barre des tâches',
+    gcmTitle: 'Git Credential Manager',
+    gcmHint: 'Les comptes GitHub avec lesquels git peut push en HTTPS. Chaque compte en choisit un.',
+    gcmNone: 'Aucun compte GitHub pour le moment.',
+    addGithub: 'Ajouter un compte GitHub',
+    waitingWindow: 'En attente de la fenêtre de connexion…',
+    ghTitle: 'GitHub CLI',
+    ghHint: 'Changer le compte global change aussi gh, quand gh est connecté à ce compte.',
+    ghActive: 'Compte actif : {user}',
+    ghNotLoggedIn: 'non connecté',
+    ghMissing: "gh n'est pas installé. Tout le reste fonctionne sans.",
+    changesTitle: 'Ce que Switchly modifie',
+    changesGitconfig:
+      "{file} : le nom, l'email, la commande SSH et le compte GitHub globaux, plus une entrée {includeIf} par dossier.",
+    changesSwitchly: '{file} : un fichier de config par compte.',
+    changesKeys: '{file} : les clés que tu crées ici. Supprimer un compte ne supprime jamais sa clé.'
+  },
+
+  popup: {
+    globalAccount: 'Compte global',
+    noGlobal: "Aucune identité globale n'est définie.",
+    noAccounts: 'Aucun compte pour le moment. Ouvre Switchly pour en ajouter un.',
+    switchTo: 'Passer à',
+    open: 'Ouvrir Switchly',
+    folderCount
+  }
+}

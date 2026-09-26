@@ -2,6 +2,7 @@ import { Search, Settings, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useAppState } from './api'
 import { Avatar, Notice } from './components'
+import { useT } from './i18n'
 import { AccountEditor, AccountPage, blankAccount } from './views/AccountPage'
 import { DiagnoseView } from './views/DiagnoseView'
 import { SettingsView } from './views/SettingsView'
@@ -11,6 +12,7 @@ type Route = { kind: 'account'; id: string } | { kind: 'new' } | { kind: 'diagno
 // Accounts are the main navigation: each one owns its identity, folders and
 // connections (see AccountPage). Tools sit at the bottom of the sidebar.
 export function MainApp() {
+  const t = useT()
   const { state, error } = useAppState()
   const [route, setRoute] = useState<Route | null>(null)
 
@@ -25,7 +27,7 @@ export function MainApp() {
     <div className="app">
       <nav className="sidebar">
         <div className="brand">Switchly</div>
-        <span className="sidebar-caption">Accounts</span>
+        <span className="sidebar-caption">{t.nav.accounts}</span>
         {state?.accounts.map((a) => {
           const folders = state.rules.filter((r) => r.accountId === a.id).length
           const selected = current.kind === 'account' && current.id === a.id
@@ -38,15 +40,15 @@ export function MainApp() {
               <Avatar account={a} size={32} />
               <span className="list-text">
                 <span className="list-title">{a.label}</span>
-                <span className="list-sub">{folders === 1 ? '1 folder' : `${folders} folders`}</span>
+                <span className="list-sub">{t.nav.folderCount(folders)}</span>
               </span>
-              {state.global.accountId === a.id && <span className="badge">Global</span>}
+              {state.global.accountId === a.id && <span className="badge">{t.nav.global}</span>}
             </button>
           )
         })}
         <button className={`add-account ${current.kind === 'new' ? 'is-selected' : ''}`} onClick={() => setRoute({ kind: 'new' })}>
           <UserPlus size={16} aria-hidden="true" />
-          Add account
+          {t.nav.addAccount}
         </button>
 
         <div className="sidebar-tools">
@@ -55,14 +57,14 @@ export function MainApp() {
             onClick={() => setRoute({ kind: 'diagnose' })}
           >
             <Search size={17} aria-hidden="true" />
-            Check a repo
+            {t.nav.checkRepo}
           </button>
           <button
             className={`nav-item ${current.kind === 'settings' ? 'is-active' : ''}`}
             onClick={() => setRoute({ kind: 'settings' })}
           >
             <Settings size={17} aria-hidden="true" />
-            Settings
+            {t.nav.settings}
           </button>
         </div>
       </nav>

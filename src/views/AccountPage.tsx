@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { ACCOUNT_COLORS, Avatar, EmptyState, Notice, Section } from '../components'
+import { fill, useT } from '../i18n'
 import { normalizeFolder } from '../rules'
 import type { Account, AppState, Rule, SshTest } from '../types'
 
@@ -40,6 +41,7 @@ type Tab = 'identity' | 'folders' | 'connections'
 // nothing needs scrolling. Keyed by account id in MainApp, so switching
 // accounts starts clean.
 export function AccountPage({ account, state, onDeleted }: { account: Account; state: AppState; onDeleted: () => void }) {
+  const t = useT()
   const [tab, setTab] = useState<Tab>('folders')
   const [message, setMessage] = useState<{ kind: 'error' | 'warn'; text: string } | null>(null)
   const isGlobal = state.global.accountId === account.id
@@ -55,9 +57,9 @@ export function AccountPage({ account, state, onDeleted }: { account: Account; s
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'identity', label: 'Identity' },
-    { id: 'folders', label: `Folders (${folderCount})` },
-    { id: 'connections', label: 'Connections' }
+    { id: 'identity', label: t.account.identity },
+    { id: 'folders', label: t.account.folders(folderCount) },
+    { id: 'connections', label: t.account.connections }
   ]
 
   return (
@@ -71,28 +73,28 @@ export function AccountPage({ account, state, onDeleted }: { account: Account; s
           </p>
         </div>
         {isGlobal ? (
-          <span className="pill-ok" title="Used in every repo that no folder covers">
-            ✓ Global account
+          <span className="pill-ok" title={t.account.globalPillTitle}>
+            {t.account.globalPill}
           </span>
         ) : (
-          <button className="btn" onClick={makeGlobal} title="Use this account in every repo that no folder covers">
+          <button className="btn" onClick={makeGlobal} title={t.account.makeGlobalTitle}>
             <Globe size={15} aria-hidden="true" />
-            Make global
+            {t.account.makeGlobal}
           </button>
         )}
       </header>
       {message && <Notice kind={message.kind}>{message.text}</Notice>}
 
-      <div className="tabs" role="tablist" aria-label="Account sections">
-        {tabs.map((t) => (
+      <div className="tabs" role="tablist" aria-label={t.account.sections}>
+        {tabs.map((tb) => (
           <button
-            key={t.id}
+            key={tb.id}
             role="tab"
-            aria-selected={tab === t.id}
-            className={`tab ${tab === t.id ? 'is-active' : ''}`}
-            onClick={() => setTab(t.id)}
+            aria-selected={tab === tb.id}
+            className={`tab ${tab === tb.id ? 'is-active' : ''}`}
+            onClick={() => setTab(tb.id)}
           >
-            {t.label}
+            {tb.label}
           </button>
         ))}
       </div>
@@ -111,6 +113,7 @@ export function AccountPage({ account, state, onDeleted }: { account: Account; s
 
 // The folder rules pointing at this account.
 function FoldersTab({ account, state }: { account: Account; state: AppState }) {
+  const t = useT()
   const [error, setError] = useState<string | null>(null)
   const mine = state.rules.filter((r) => r.accountId === account.id).sort((a, b) => a.folder.localeCompare(b.folder))
   const global = state.accounts.find((a) => a.id === state.global.accountId)
@@ -125,21 +128,21 @@ function FoldersTab({ account, state }: { account: Account; state: AppState }) {
   }
 
   async function addFolder(): Promise<void> {
-    const picked = await open({ directory: true, title: `Choose a folder for ${account.label}` })
+    const picked = await open({ directory: true, title: t.folders.chooseTitle(account.label) })
     if (typeof picked !== 'string') return
     const folder = normalizeFolder(picked)
     const existing = state.rules.find((r) => r.folder.toLowerCase() === folder.toLowerCase())
     if (existing?.accountId === account.id) {
-      setError(`${folder} is already in this account's folders.`)
+      setError(t.folders.alreadyHere(folder))
       return
     }
     if (existing) {
       const other = state.accounts.find((a) => a.id === existing.accountId)
-      const move = await ask(`${folder} currently uses ${other?.label ?? 'another account'}.\n\nUse ${account.label} for it instead?`, {
-        title: 'Move folder',
+      const move = await ask(t.folders.moveBody(folder, other?.label ?? t.folders.anotherAccount, account.label), {
+        title: t.folders.moveTitle,
         kind: 'warning',
-        okLabel: 'Move it',
-        cancelLabel: 'Cancel'
+        okLabel: t.folders.moveOk,
+        cancelLabel: t.common.cancel
       })
       if (!move) return
       await save(state.rules.map((r) => (r === existing ? { ...r, accountId: account.id } : r)))
@@ -149,14 +152,11 @@ function FoldersTab({ account, state }: { account: Account; state: AppState }) {
   }
 
   return (
-    <Section title="Folders">
-      <p className="hint">
-        Every repository inside these folders commits and pushes as <strong>{account.label}</strong>. When folders are nested,
-        the deepest one wins.
-      </p>
+    <Section title={t.folders.title}>
+      <p className="hint">{fill(t.folders.intro, { label: <strong>{account.label}</strong> })}</p>
       {mine.length === 0 ? (
-        <EmptyState title="No folders yet">
-          <p className="hint">This account is only used while it's the global one.</p>
+        <EmptyState title={t.folders.emptyTitle}>
+          <p className="hint">{t.folders.emptyHint}</p>
         </EmptyState>
       ) : (
         <div className="folders">
@@ -166,11 +166,11 @@ function FoldersTab({ account, state }: { account: Account; state: AppState }) {
               <code title={rule.folder}>{rule.folder}</code>
               <button
                 className="btn btn-small btn-danger-ghost"
-                aria-label={`Remove ${rule.folder}`}
+                aria-label={t.folders.removeLabel(rule.folder)}
                 onClick={() => save(state.rules.filter((r) => r.folder !== rule.folder))}
               >
                 <X size={14} aria-hidden="true" />
-                Remove
+                {t.folders.remove}
               </button>
             </div>
           ))}
@@ -179,10 +179,12 @@ function FoldersTab({ account, state }: { account: Account; state: AppState }) {
       <div className="actions">
         <button className="btn btn-primary" onClick={addFolder}>
           <FolderPlus size={15} aria-hidden="true" />
-          Add a folder
+          {t.folders.add}
         </button>
         <span className="hint">
-          Outside every folder: <strong>{global?.label ?? state.global.email ?? 'no identity'}</strong> (global)
+          {fill(t.folders.outside, {
+            label: <strong>{global?.label ?? state.global.email ?? t.folders.noIdentity}</strong>
+          })}
         </span>
       </div>
       {error && <Notice kind="error">{error}</Notice>}
@@ -199,6 +201,7 @@ export function AccountEditor({
   onSaved?: (a: Account) => void
   onDeleted?: () => void
 }) {
+  const t = useT()
   const [draft, setDraft] = useState(initial)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -223,10 +226,12 @@ export function AccountEditor({
   async function remove(): Promise<void> {
     // The dialog plugin, not window.confirm(): the webview doesn't reliably
     // show browser dialogs, which made the button look dead.
-    const ok = await ask(
-      `Delete "${initial.label}"?\n\nIts folder rules are removed too. Its SSH key file stays on disk, and the global git identity isn't changed.`,
-      { title: 'Delete account', kind: 'warning', okLabel: 'Delete', cancelLabel: 'Cancel' }
-    )
+    const ok = await ask(t.editor.deleteBody(initial.label), {
+      title: t.editor.deleteTitle,
+      kind: 'warning',
+      okLabel: t.editor.deleteOk,
+      cancelLabel: t.common.cancel
+    })
     if (!ok) return
     try {
       await api.deleteAccount(initial.id)
@@ -237,37 +242,37 @@ export function AccountEditor({
   }
 
   return (
-    <Section title={isNew ? 'New account' : 'Identity'}>
+    <Section title={isNew ? t.editor.newTitle : t.editor.title}>
       <div className="form">
         <label>
-          <span>Label</span>
-          <input value={draft.label} placeholder="Personal, Client A…" onChange={(e) => set('label', e.target.value)} />
+          <span>{t.editor.label}</span>
+          <input value={draft.label} placeholder={t.editor.labelPlaceholder} onChange={(e) => set('label', e.target.value)} />
         </label>
         <label>
-          <span>Commit name</span>
-          <input value={draft.name} placeholder="Jane Doe" onChange={(e) => set('name', e.target.value)} />
+          <span>{t.editor.name}</span>
+          <input value={draft.name} placeholder={t.editor.namePlaceholder} onChange={(e) => set('name', e.target.value)} />
         </label>
         <label>
-          <span>Commit email</span>
-          <input value={draft.email} placeholder="jane@example.com" onChange={(e) => set('email', e.target.value)} />
+          <span>{t.editor.email}</span>
+          <input value={draft.email} placeholder={t.editor.emailPlaceholder} onChange={(e) => set('email', e.target.value)} />
         </label>
         <label>
-          <span>GitHub username</span>
+          <span>{t.editor.githubUser}</span>
           <input
             value={draft.githubUser}
-            placeholder="Optional: used to log in for HTTPS pushes and gh"
+            placeholder={t.editor.githubUserPlaceholder}
             onChange={(e) => set('githubUser', e.target.value)}
           />
         </label>
         <div className="field">
-          <span>Color</span>
+          <span>{t.editor.color}</span>
           <div className="swatches">
             {ACCOUNT_COLORS.map((c) => (
               <button
                 key={c}
                 className={`swatch ${draft.color === c ? 'is-selected' : ''}`}
                 style={{ background: c }}
-                aria-label={`Color ${c}`}
+                aria-label={t.editor.colorLabel(c)}
                 onClick={() => set('color', c)}
               />
             ))}
@@ -278,13 +283,13 @@ export function AccountEditor({
       <div className="actions">
         <button className="btn btn-primary" disabled={!dirty} onClick={save}>
           {isNew ? <UserPlus size={15} aria-hidden="true" /> : <Save size={15} aria-hidden="true" />}
-          {isNew ? 'Add account' : 'Save'}
+          {isNew ? t.editor.add : t.editor.save}
         </button>
-        {saved && !dirty && <span className="saved">Saved</span>}
+        {saved && !dirty && <span className="saved">{t.editor.saved}</span>}
         {!isNew && (
           <button className="btn btn-danger push-right" onClick={remove}>
             <Trash2 size={15} aria-hidden="true" />
-            Delete account
+            {t.editor.delete}
           </button>
         )}
       </div>
@@ -293,6 +298,7 @@ export function AccountEditor({
 }
 
 function SshSection({ account }: { account: Account }) {
+  const t = useT()
   const [publicKey, setPublicKey] = useState<string | null>(null)
   const [test, setTest] = useState<SshTest | null>(null)
   const [busy, setBusy] = useState(false)
@@ -324,18 +330,18 @@ function SshSection({ account }: { account: Account }) {
   const useDefault = (): Promise<void> => run(() => api.setSshKey(account.id, null))
   const pickExisting = (): Promise<void> =>
     run(async () => {
-      const path = await open({ title: 'Choose a private SSH key', defaultPath: await join(await homeDir(), '.ssh') })
+      const path = await open({ title: t.ssh.pickTitle, defaultPath: await join(await homeDir(), '.ssh') })
       if (typeof path === 'string') await api.setSshKey(account.id, path)
     })
   const testConnection = (): Promise<void> => run(async () => setTest(await api.testSsh(account.id)))
 
-  const githubUser = account.githubUser || 'this account'
+  const githubUser = account.githubUser || t.ssh.thisAccount
 
   return (
-    <Section title="SSH key" hint="For git@github.com:… remotes. Each GitHub account needs its own key.">
+    <Section title={t.ssh.title} hint={t.ssh.hint}>
       <div className="key-summary" title={account.sshKeyPath ?? undefined}>
-        <span className="key-label">{account.sshKeyPath ? 'Key' : 'Uses'}</span>
-        <code>{account.sshKeyPath ? shortenHome(account.sshKeyPath) : 'your default key (~/.ssh/id_*)'}</code>
+        <span className="key-label">{account.sshKeyPath ? t.ssh.key : t.ssh.uses}</span>
+        <code>{account.sshKeyPath ? shortenHome(account.sshKeyPath) : t.ssh.defaultKey}</code>
       </div>
       {publicKey && (
         <code className="key-value" title={publicKey}>
@@ -354,47 +360,49 @@ function SshSection({ account }: { account: Account }) {
               }}
             >
               {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? t.ssh.copied : t.ssh.copy}
             </button>
             <button
               className="btn btn-small"
-              title={`Sign in to GitHub as ${githubUser} first`}
+              title={t.ssh.addOnGithubTitle(githubUser)}
               onClick={() => openUrl('https://github.com/settings/ssh/new')}
             >
               <ExternalLink size={14} aria-hidden="true" />
-              Add on GitHub
+              {t.ssh.addOnGithub}
             </button>
           </>
         )}
         {!account.sshKeyPath && (
           <button className="btn btn-small btn-primary" disabled={busy} onClick={generate}>
             <KeyRound size={14} aria-hidden="true" />
-            Create a key
+            {t.ssh.create}
           </button>
         )}
         <button className="btn btn-small" disabled={busy} onClick={testConnection}>
           <PlugZap size={14} aria-hidden="true" />
-          {busy ? 'Testing…' : 'Test'}
+          {busy ? t.ssh.testing : t.ssh.test}
         </button>
       </div>
-      {publicKey && <p className="hint">Add it while signed in to GitHub as {githubUser}.</p>}
+      {publicKey && <p className="hint">{t.ssh.addWhileSignedIn(githubUser)}</p>}
       <div className="link-actions">
         <button className="link-btn" disabled={busy} onClick={pickExisting}>
           <FileKey size={14} aria-hidden="true" />
-          Use another key…
+          {t.ssh.useAnother}
         </button>
         {account.sshKeyPath && (
           <button className="link-btn" disabled={busy} onClick={useDefault}>
             <RotateCcw size={14} aria-hidden="true" />
-            Use the default key
+            {t.ssh.useDefault}
           </button>
         )}
       </div>
       {test && (
         <Notice kind={test.ok ? (sameUser(test.githubUser, account.githubUser) ? 'ok' : 'warn') : 'error'}>
           {test.message}
-          {test.ok && account.githubUser && !sameUser(test.githubUser, account.githubUser) &&
-            ` This key belongs to ${test.githubUser}, not ${account.githubUser}.`}
+          {test.ok &&
+            account.githubUser &&
+            !sameUser(test.githubUser, account.githubUser) &&
+            t.ssh.belongsTo(test.githubUser ?? '', account.githubUser)}
         </Notice>
       )}
       {error && <Notice kind="error">{error}</Notice>}
@@ -412,6 +420,7 @@ function sameUser(a: string | null, b: string): boolean {
 }
 
 function HttpsSection({ account }: { account: Account }) {
+  const t = useT()
   const [accounts, setAccounts] = useState<string[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -437,23 +446,23 @@ function HttpsSection({ account }: { account: Account }) {
   const signedIn = accounts?.some((a) => a.toLowerCase() === account.githubUser.toLowerCase()) ?? false
 
   return (
-    <Section title="HTTPS login" hint="For https://github.com/… remotes, through Git Credential Manager.">
+    <Section title={t.https.title} hint={t.https.hint}>
       {!account.githubUser ? (
-        <Notice kind="info">Add a GitHub username in Identity to pin this account's login.</Notice>
+        <Notice kind="info">{t.https.noUser}</Notice>
       ) : accounts === null ? (
-        <p className="hint">Checking…</p>
+        <p className="hint">{t.common.checking}</p>
       ) : signedIn ? (
-        <Notice kind="ok">Signed in as {account.githubUser}</Notice>
+        <Notice kind="ok">{t.https.signedIn(account.githubUser)}</Notice>
       ) : (
         <>
-          <Notice kind="warn">Not signed in as {account.githubUser} yet</Notice>
+          <Notice kind="warn">{t.https.notSignedIn(account.githubUser)}</Notice>
           <div className="actions">
             <button className="btn btn-small btn-primary" disabled={busy} onClick={login}>
               <LogIn size={14} aria-hidden="true" />
-              {busy ? 'Waiting for sign-in…' : `Sign in as ${account.githubUser}`}
+              {busy ? t.https.waiting : t.https.signIn(account.githubUser)}
             </button>
           </div>
-          <p className="hint">If your browser is signed in to another GitHub account, switch there first.</p>
+          <p className="hint">{t.https.switchBrowser}</p>
         </>
       )}
       {error && <Notice kind="error">{error}</Notice>}

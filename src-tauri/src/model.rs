@@ -36,6 +36,10 @@ pub struct Config {
     pub accounts: Vec<Account>,
     #[serde(default)]
     pub rules: Vec<Rule>,
+    // The UI language ("en", "fr"), sent by the frontend so the tray menu,
+    // which Rust draws, matches it from the next launch on.
+    #[serde(default)]
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

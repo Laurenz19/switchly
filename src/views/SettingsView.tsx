@@ -1,23 +1,31 @@
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
-import { Monitor, Moon, Sun, UserPlus } from 'lucide-react'
+import { Languages, Monitor, Moon, Sun, UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { Notice, Section } from '../components'
+import { fill, LANGUAGES, type LangPref, messagesFor, setLangPref, useLangPref, useT } from '../i18n'
 import { type ThemePref, useThemePref } from '../theme'
 import type { AppState } from '../types'
 
-const THEMES: { id: ThemePref; label: string; Icon: typeof Moon }[] = [
-  { id: 'dark', label: 'Dark', Icon: Moon },
-  { id: 'light', label: 'Light', Icon: Sun },
-  { id: 'system', label: 'Match Windows', Icon: Monitor }
-]
-
 export function SettingsView({ state }: { state: AppState }) {
+  const t = useT()
+  const lang = useLangPref()
   const [theme, setTheme] = useThemePref()
   const [autostart, setAutostart] = useState<boolean | null>(null)
   const [gcm, setGcm] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  const themes: { id: ThemePref; label: string; Icon: typeof Moon }[] = [
+    { id: 'dark', label: t.settings.dark, Icon: Moon },
+    { id: 'light', label: t.settings.light, Icon: Sun },
+    { id: 'system', label: t.settings.matchWindows, Icon: Monitor }
+  ]
+  // Each language is named in itself, so it's findable whatever is active.
+  const languages: { id: LangPref; label: string }[] = [
+    { id: 'system', label: t.settings.windowsLanguage },
+    ...LANGUAGES.map((l) => ({ id: l, label: messagesFor(l).languageName }))
+  ]
 
   const refreshGcm = (): void => {
     api.gcmAccounts().then(setGcm, (e) => setError(errorMessage(e)))
@@ -52,38 +60,55 @@ export function SettingsView({ state }: { state: AppState }) {
 
   return (
     <div className="page">
-      <Section title="Appearance">
-        <div className="segmented" role="radiogroup" aria-label="Theme">
-          {THEMES.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              role="radio"
-              aria-checked={theme === id}
-              className={`segment ${theme === id ? 'is-active' : ''}`}
-              onClick={() => setTheme(id)}
-            >
-              <Icon size={15} aria-hidden="true" />
-              {label}
-            </button>
-          ))}
+      <Section title={t.settings.appearance}>
+        <div className="setting-row">
+          <span className="setting-label">{t.settings.theme}</span>
+          <div className="segmented" role="radiogroup" aria-label={t.settings.theme}>
+            {themes.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                role="radio"
+                aria-checked={theme === id}
+                className={`segment ${theme === id ? 'is-active' : ''}`}
+                onClick={() => setTheme(id)}
+              >
+                <Icon size={15} aria-hidden="true" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="setting-row">
+          <span className="setting-label">{t.settings.language}</span>
+          <div className="segmented" role="radiogroup" aria-label={t.settings.language}>
+            {languages.map(({ id, label }) => (
+              <button
+                key={id}
+                role="radio"
+                aria-checked={lang === id}
+                className={`segment ${lang === id ? 'is-active' : ''}`}
+                onClick={() => setLangPref(id)}
+              >
+                {id === 'system' && <Languages size={15} aria-hidden="true" />}
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </Section>
 
-      <Section title="Startup">
+      <Section title={t.settings.startup}>
         <label className="toggle-row">
           <input type="checkbox" checked={!!autostart} disabled={autostart === null} onChange={toggleAutostart} />
-          <span>Start Switchly with Windows, in the tray</span>
+          <span>{t.settings.startWithWindows}</span>
         </label>
       </Section>
 
-      <Section
-        title="Git Credential Manager"
-        hint="The GitHub accounts git can push with over HTTPS. Each folder rule picks one of them."
-      >
+      <Section title={t.settings.gcmTitle} hint={t.settings.gcmHint}>
         {gcm === null ? (
-          <p className="hint">Checking…</p>
+          <p className="hint">{t.common.checking}</p>
         ) : gcm.length === 0 ? (
-          <Notice kind="info">No GitHub account yet.</Notice>
+          <Notice kind="info">{t.settings.gcmNone}</Notice>
         ) : (
           <ul className="plain-list">
             {gcm.map((user) => (
@@ -96,33 +121,24 @@ export function SettingsView({ state }: { state: AppState }) {
         <div className="actions">
           <button className="btn" disabled={busy} onClick={addGcmAccount}>
             <UserPlus size={15} aria-hidden="true" />
-            {busy ? 'Waiting for the sign-in window…' : 'Add a GitHub account'}
+            {busy ? t.settings.waitingWindow : t.settings.addGithub}
           </button>
         </div>
       </Section>
 
-      <Section title="GitHub CLI" hint="Switching the global account also switches gh, when gh is logged in to that user.">
+      <Section title={t.settings.ghTitle} hint={t.settings.ghHint}>
         {state.ghAvailable ? (
-          <p>
-            Active account: <code>{state.ghUser ?? 'not logged in'}</code>
-          </p>
+          <p>{fill(t.settings.ghActive, { user: <code>{state.ghUser ?? t.settings.ghNotLoggedIn}</code> })}</p>
         ) : (
-          <Notice kind="info">gh isn't installed. Everything else works without it.</Notice>
+          <Notice kind="info">{t.settings.ghMissing}</Notice>
         )}
       </Section>
 
-      <Section title="What Switchly changes">
+      <Section title={t.settings.changesTitle}>
         <ul className="plain-list">
-          <li>
-            <code>~/.gitconfig</code>: the global name, email, SSH command and GitHub login, plus one{' '}
-            <code>includeIf</code> entry per folder rule.
-          </li>
-          <li>
-            <code>~/.switchly/</code>: one config file per account.
-          </li>
-          <li>
-            <code>~/.ssh/id_ed25519_switchly_*</code>: keys you create here. Deleting an account never deletes its key.
-          </li>
+          <li>{fill(t.settings.changesGitconfig, { file: <code>~/.gitconfig</code>, includeIf: <code>includeIf</code> })}</li>
+          <li>{fill(t.settings.changesSwitchly, { file: <code>~/.switchly/</code> })}</li>
+          <li>{fill(t.settings.changesKeys, { file: <code>~/.ssh/id_ed25519_switchly_*</code> })}</li>
         </ul>
       </Section>
 

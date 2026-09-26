@@ -42,9 +42,13 @@ pub fn build_state(store: &Store) -> AppState {
     }
 }
 
+pub fn language(store: &Store) -> &str {
+    store.config.language.as_deref().unwrap_or("en")
+}
+
 fn changed(app: &AppHandle, store: &Store) -> AppState {
     let state = build_state(store);
-    tray::refresh(app, &state);
+    tray::refresh(app, &state, language(store));
     let _ = app.emit("state-changed", &state);
     state
 }
@@ -224,6 +228,21 @@ pub async fn diagnose_repo(path: String) -> Result<RepoFacts, String> {
     tauri::async_runtime::spawn_blocking(move || git::repo_facts(Path::new(&path)))
         .await
         .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub fn set_language(app: AppHandle, store: State<'_, SharedStore>, lang: String) -> Result<(), String> {
+    if !tray::LANGUAGES.contains(&lang.as_str()) {
+        return Err(format!("Unsupported language: {lang}"));
+    }
+    let mut s = lock(&store)?;
+    if s.config.language.as_deref() != Some(lang.as_str()) {
+        s.config.language = Some(lang);
+        s.save()?;
+    }
+    let state = build_state(&s);
+    tray::refresh(&app, &state, language(&s));
+    Ok(())
 }
 
 #[tauri::command]
