@@ -27,7 +27,7 @@
         "label": "popup",
         "title": "Switchly",
         "width": 340,
-        "height": 460,
+        "height": 300,
         "visible": false,
         "decorations": false,
         "resizable": false,

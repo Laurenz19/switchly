@@ -294,6 +294,11 @@ pub fn open_main(app: AppHandle) {
 }
 
 #[tauri::command]
+pub fn resize_popup(app: AppHandle, height: f64) {
+    tray::resize_popup(&app, height);
+}
+
+#[tauri::command]
 pub fn hide_popup(app: AppHandle) {
     tray::hide_popup(&app);
 }

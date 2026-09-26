@@ -69,6 +69,7 @@ pub fn run() {
             commands::set_language,
             commands::open_main,
             commands::hide_popup,
+            commands::resize_popup,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Switchly");

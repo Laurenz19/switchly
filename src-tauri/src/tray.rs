@@ -72,6 +72,19 @@ fn toggle_popup(app: &AppHandle) {
     let _ = w.set_focus();
 }
 
+const POPUP_WIDTH: f64 = 340.0;
+
+// The popup sizes itself to its content (it reports its height from the
+// page), then goes back above the tray icon: it's anchored at its bottom edge,
+// so a height change would otherwise leave a gap or cover the taskbar.
+pub fn resize_popup(app: &AppHandle, height: f64) {
+    let Some(w) = app.get_webview_window("popup") else { return };
+    let _ = w.set_size(tauri::LogicalSize::new(POPUP_WIDTH, height.clamp(160.0, 640.0)));
+    if w.is_visible().unwrap_or(false) {
+        let _ = w.move_window(Position::TrayCenter);
+    }
+}
+
 fn active_label(state: &AppState, t: &TrayText) -> String {
     let account = state.global.account_id.as_deref().and_then(|id| state.accounts.iter().find(|a| a.id == id));
     match (account, &state.global.email) {

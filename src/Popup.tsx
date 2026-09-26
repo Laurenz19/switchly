@@ -1,5 +1,5 @@
 import { AppWindow } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { api, errorMessage, useAppState } from './api'
 import { Avatar, HostBadge, Notice } from './components'
 import { useT } from './i18n'
@@ -19,6 +19,28 @@ export function Popup() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Fit the window to the content: header + the whole list + footer, even
+  // when the list is taller than the window (the backend caps the height and
+  // the list then scrolls). Re-measured whenever the content changes.
+  const rootRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const measure = (): void => {
+      const part = (cls: string): HTMLElement | null => root.querySelector(`.${cls}`)
+      const header = part('popup-header')
+      const body = part('popup-body')
+      const footer = part('popup-footer')
+      if (!header || !body || !footer) return
+      const borders = root.offsetHeight - root.clientHeight
+      void api.resizePopup(Math.ceil(header.offsetHeight + body.scrollHeight + footer.offsetHeight + borders))
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(root)
+    return () => observer.disconnect()
+  }, [state, message])
+
   if (!state) return null
   const global = state.accounts.find((a) => a.id === state.global.accountId)
 
@@ -32,7 +54,7 @@ export function Popup() {
   }
 
   return (
-    <div className="popup">
+    <div className="popup" ref={rootRef}>
       <header className="popup-header">
         <span className="popup-caption">{t.popup.globalAccount}</span>
         {global ? (

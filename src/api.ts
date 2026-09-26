@@ -22,7 +22,9 @@ export const api = {
   gcmLogin: () => invoke<void>('gcm_login'),
   diagnoseRepo: (path: string) => invoke<RepoFacts>('diagnose_repo', { path }),
   openMain: () => invoke<void>('open_main'),
-  hidePopup: () => invoke<void>('hide_popup')
+  hidePopup: () => invoke<void>('hide_popup'),
+  // The popup window takes the height of its content.
+  resizePopup: (height: number) => invoke<void>('resize_popup', { height })
 }
 
 export function errorMessage(err: unknown): string {

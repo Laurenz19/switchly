@@ -835,10 +835,11 @@ select {
   background: var(--bg-pane);
 }
 
+/* Sized by its content (see Popup.tsx), up to the window's height. */
 .popup {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  max-height: 100vh;
   border: 1px solid var(--border);
 }
 
@@ -852,7 +853,8 @@ select {
 }
 
 .popup-body {
-  flex: 1;
+  flex: 0 1 auto;
+  min-height: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
