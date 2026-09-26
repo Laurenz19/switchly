@@ -78,6 +78,36 @@ Switchly only writes standard git configuration, and leaves logins to Git Creden
 - `~/.ssh/id_ed25519_switchly_*`: SSH keys you create in Switchly. Deleting an account never deletes its key.
 - `~/.switchly/hooks/`: the commit guard, used through the global `core.hooksPath` while the guard is on. Each hook also runs the repository's own hook of the same name. Switchly won't replace a global hooks folder you set up yourself.
 
+## Roadmap
+
+Ideas for the next versions, most useful first. Suggestions and pull requests are welcome.
+
+**Rules and setup**
+- **Rules by remote, not only by folder.** Use an account for every repository whose remote is `github.com/acme/...`, wherever it sits on disk (git's `includeIf "hasconfig:remote.*.url:..."`, git 2.36+).
+- **Assisted clone.** Paste a repository URL; Switchly picks the account from the site and owner, then clones into that account's folder with the right login.
+- **Import on first launch.** Detect the existing global identity, Git Credential Manager logins, `~/.ssh` keys and `includeIf` rules, and offer to turn them into accounts.
+- **Repository scan.** List every repository on the machine with the account it will use, and flag the ones no rule covers.
+
+**Fixing problems**
+- **One-click fixes in "Check a repo":** remove a local `user.email` that overrides the rule, add the repository's folder to an account, or fix the author of commits made with the wrong account before they're pushed.
+- **Upload SSH keys automatically** to GitHub through the `gh` CLI (`gh ssh-key add`), for authentication and signing, without Switchly storing any token.
+
+**Windows integration**
+- **A global keyboard shortcut** to open the tray popup.
+- **An Explorer context menu** on folders: "Which account?" and "Use the account…".
+- **A Windows 11 widget** showing the global account and switching it.
+- **A VS Code extension** showing the open repository's account in the status bar.
+
+**AI coding agents**
+
+Agents like Claude Code, Copilot or Cursor now commit and push on your behalf. Folder rules and the commit guard already apply to them, since they're plain git: an agent committing with the wrong email is refused like anyone else. Next:
+- **A `switchly check` command** with machine-readable output, so an agent can verify the account before committing or pushing.
+- **An MCP server** so agents can ask Switchly which account a repository uses, and whether a push is safe.
+
+**Distribution**
+- **A signed installer** (or a Microsoft Store listing), so Windows SmartScreen stops warning.
+- **More languages.**
+
 ## Development
 
 Needs Node 22, Rust and the MSVC build tools (see [Tauri's prerequisites](https://tauri.app/start/prerequisites/)).
