@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Written by the release workflow
+src-tauri/tauri.release.conf.json

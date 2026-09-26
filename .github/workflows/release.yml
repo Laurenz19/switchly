@@ -1,0 +1,89 @@
+# Pushing a vX.Y.Z tag builds Switchly and publishes a GitHub Release with:
+# - x64: the NSIS installer (.exe) and the MSI
+# - ARM64 (Snapdragon and other Windows-on-ARM PCs): the NSIS installer
+# The tag is the version: it's stamped into the build, so tauri.conf.json
+# doesn't need bumping by hand.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: x64
+            target: x86_64-pc-windows-msvc
+            bundles: nsis,msi
+          - name: ARM64
+            target: aarch64-pc-windows-msvc
+            bundles: nsis
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Read version from tag
+        id: version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag '$tag' must look like v1.2.0." >&2
+            exit 1
+          fi
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+          key: ${{ matrix.target }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check and test
+        run: npm run check
+
+      - name: Stamp version
+        shell: bash
+        run: echo '{ "version": "${{ steps.version.outputs.version }}" }' > src-tauri/tauri.release.conf.json
+
+      - name: Build and upload to the release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Switchly ${{ github.ref_name }}
+          releaseBody: |
+            Download the installer for your PC below:
+
+            - **Windows (most PCs)**: `Switchly_${{ steps.version.outputs.version }}_x64-setup.exe` (or the `.msi` for IT deployment)
+            - **Windows on ARM (Snapdragon…)**: `Switchly_${{ steps.version.outputs.version }}_arm64-setup.exe`
+
+            The installer isn't signed yet: if Windows SmartScreen warns, click **More info → Run anyway**.
+          releaseDraft: false
+          prerelease: false
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --config src-tauri/tauri.release.conf.json
