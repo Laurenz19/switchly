@@ -46,6 +46,15 @@ export function SettingsView({ state }: { state: AppState }) {
     }
   }
 
+  async function toggleGuard(on: boolean): Promise<void> {
+    try {
+      await api.setGuard(on)
+      setError(null)
+    } catch (e) {
+      setError(errorMessage(e))
+    }
+  }
+
   async function addGcmAccount(): Promise<void> {
     setBusy(true)
     try {
@@ -104,6 +113,14 @@ export function SettingsView({ state }: { state: AppState }) {
         </label>
       </Section>
 
+      <Section title={t.settings.guardTitle} hint={t.settings.guardHint}>
+        <label className="toggle-row">
+          <input type="checkbox" checked={state.guard} onChange={(e) => toggleGuard(e.target.checked)} />
+          <span>{t.settings.guardToggle}</span>
+        </label>
+        <p className="hint">{fill(t.settings.guardSkip, { command: <code>git commit --no-verify</code> })}</p>
+      </Section>
+
       <Section title={t.settings.gcmTitle} hint={t.settings.gcmHint}>
         {gcm === null ? (
           <p className="hint">{t.common.checking}</p>
@@ -138,6 +155,9 @@ export function SettingsView({ state }: { state: AppState }) {
         <ul className="plain-list">
           <li>{fill(t.settings.changesGitconfig, { file: <code>~/.gitconfig</code>, includeIf: <code>includeIf</code> })}</li>
           <li>{fill(t.settings.changesSwitchly, { file: <code>~/.switchly/</code> })}</li>
+          <li>
+            {fill(t.settings.changesHooks, { file: <code>~/.switchly/hooks/</code>, hooksPath: <code>core.hooksPath</code> })}
+          </li>
           <li>{fill(t.settings.changesKeys, { file: <code>~/.ssh/id_ed25519_switchly_*</code> })}</li>
         </ul>
       </Section>

@@ -178,6 +178,11 @@ export const fr: Messages = {
     windowsLanguage: 'Langue de Windows',
     startup: 'Démarrage',
     startWithWindows: 'Lancer Switchly avec Windows, dans la barre des tâches',
+    guardTitle: 'Garde des commits',
+    guardToggle: 'Refuser les commits faits avec le mauvais compte',
+    guardHint:
+      "Git refuse un commit dont l'email n'est pas celui du compte propriétaire du dossier du repository, par exemple un repo qui remplace user.email. Les hooks propres à chaque repository continuent de s'exécuter.",
+    guardSkip: 'Pour le passer une fois : {command}',
     gcmTitle: 'Git Credential Manager',
     gcmHint: "Les connexions GitHub enregistrées dans Git Credential Manager. Celles de GitLab et Bitbucket s'affichent dans l'onglet Connexions de chaque compte.",
     gcmNone: 'Aucun compte GitHub pour le moment.',
@@ -192,6 +197,7 @@ export const fr: Messages = {
     changesGitconfig:
       "{file} : le nom, l'email, la commande SSH et le compte GitHub globaux, plus une entrée {includeIf} par dossier.",
     changesSwitchly: '{file} : un fichier de config par compte.',
+    changesHooks: '{file} : les hooks de la garde des commits, utilisés via le {hooksPath} global quand la garde est activée.',
     changesKeys: '{file} : les clés que tu crées ici. Supprimer un compte ne supprime jamais sa clé.'
   },
 

@@ -70,6 +70,8 @@ pub struct AppState {
     pub global: GlobalIdentity,
     pub gh_user: Option<String>,
     pub gh_available: bool,
+    // Whether the commit guard hook is installed (see guard.rs).
+    pub guard: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]

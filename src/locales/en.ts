@@ -181,6 +181,11 @@ export const en = {
     windowsLanguage: 'Windows language',
     startup: 'Startup',
     startWithWindows: 'Start Switchly with Windows, in the tray',
+    guardTitle: 'Commit guard',
+    guardToggle: 'Refuse commits made with the wrong account',
+    guardHint:
+      "Git refuses a commit whose email isn't the one of the account that owns the repository's folder, for example a repo overriding user.email. Each repository's own hooks keep running.",
+    guardSkip: 'To skip it once: {command}',
     gcmTitle: 'Git Credential Manager',
     gcmHint: "GitHub logins stored in Git Credential Manager. GitLab and Bitbucket logins show in each account's Connections tab.",
     gcmNone: 'No GitHub account yet.',
@@ -194,6 +199,7 @@ export const en = {
     changesTitle: 'What Switchly changes',
     changesGitconfig: '{file}: the global name, email, SSH command and GitHub login, plus one {includeIf} entry per folder.',
     changesSwitchly: '{file}: one config file per account.',
+    changesHooks: "{file}: the commit guard's hooks, used through the global {hooksPath} while the guard is on.",
     changesKeys: "{file}: keys you create here. Deleting an account never deletes its key."
   },
 

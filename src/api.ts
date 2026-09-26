@@ -9,6 +9,7 @@ export const api = {
   saveAccount: (account: Account) => invoke<Account>('save_account', { account }),
   deleteAccount: (id: string) => invoke<void>('delete_account', { id }),
   setRules: (rules: Rule[]) => invoke<void>('set_rules', { rules }),
+  setGuard: (on: boolean) => invoke<void>('set_guard', { on }),
   // Resolves to a warning when git switched but the gh CLI couldn't.
   switchGlobal: (id: string) => invoke<string | null>('switch_global', { id }),
   generateSshKey: (id: string) => invoke<string>('generate_ssh_key', { id }),

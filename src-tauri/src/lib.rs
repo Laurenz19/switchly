@@ -1,6 +1,7 @@
 mod commands;
 mod git;
 mod github;
+mod guard;
 mod hosts;
 mod model;
 mod proc;
@@ -67,6 +68,7 @@ pub fn run() {
             commands::gcm_login,
             commands::diagnose_repo,
             commands::set_language,
+            commands::set_guard,
             commands::open_main,
             commands::hide_popup,
             commands::resize_popup,

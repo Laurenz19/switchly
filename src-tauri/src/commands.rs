@@ -2,7 +2,7 @@
 // applied to git, then broadcast ("state-changed") to both windows and the tray.
 use crate::model::{Account, AppState, GlobalIdentity, RepoFacts, Rule, SshTest};
 use crate::store::Store;
-use crate::{git, github, ssh, tray};
+use crate::{git, github, guard, ssh, tray};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -48,6 +48,7 @@ pub fn build_state(store: &Store) -> AppState {
         global: GlobalIdentity { name, email, account_id },
         gh_user: if gh_available { github::gh_active_user() } else { None },
         gh_available,
+        guard: guard::is_enabled(&store.managed_dir),
     }
 }
 
@@ -56,6 +57,10 @@ pub fn language(store: &Store) -> &str {
 }
 
 fn changed(app: &AppHandle, store: &Store) -> AppState {
+    // Keep the guard's folder → email list in step with the rules.
+    if let Err(e) = guard::write_rules(&store.managed_dir, &store.config) {
+        eprintln!("{e}");
+    }
     let state = build_state(store);
     tray::refresh(app, &state, language(store));
     let _ = app.emit("state-changed", &state);
@@ -279,6 +284,18 @@ pub async fn diagnose_repo(path: String) -> Result<RepoFacts, String> {
     tauri::async_runtime::spawn_blocking(move || git::repo_facts(Path::new(&path)))
         .await
         .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub fn set_guard(app: AppHandle, store: State<'_, SharedStore>, on: bool) -> Result<(), String> {
+    let s = lock(&store)?;
+    if on {
+        guard::enable(&s.managed_dir, &s.config)?;
+    } else {
+        guard::disable(&s.managed_dir)?;
+    }
+    changed(&app, &s);
+    Ok(())
 }
 
 #[tauri::command]

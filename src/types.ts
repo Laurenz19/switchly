@@ -42,6 +42,8 @@ export interface AppState {
   // null when the gh CLI isn't installed.
   ghUser: string | null
   ghAvailable: boolean
+  // Whether the commit guard hook is installed.
+  guard: boolean
 }
 
 export interface ConfigValue {
