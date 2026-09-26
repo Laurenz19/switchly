@@ -88,6 +88,11 @@ Ideas for the next versions, most useful first. Suggestions and pull requests ar
 - **Import on first launch.** Detect the existing global identity, Git Credential Manager logins, `~/.ssh` keys and `includeIf` rules, and offer to turn them into accounts.
 - **Repository scan.** List every repository on the machine with the account it will use, and flag the ones no rule covers.
 
+**Sharing a setup**
+- **Export and import.** Save accounts, folders and settings to a file, and load it into Switchly on another PC, after a reinstall, or to hand a team a ready-made setup (the client's accounts and folder layout).
+  - Folders that don't exist on the new machine are mapped interactively, e.g. `C:\Dev\` → `D:\Projects\`.
+  - Private SSH keys and logins are never exported: the import points at existing keys or creates new ones, and each login is signed in again through Git Credential Manager.
+
 **Fixing problems**
 - **One-click fixes in "Check a repo":** remove a local `user.email` that overrides the rule, add the repository's folder to an account, or fix the author of commits made with the wrong account before they're pushed.
 - **Upload SSH keys automatically** to GitHub through the `gh` CLI (`gh ssh-key add`), for authentication and signing, without Switchly storing any token.
