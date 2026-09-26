@@ -94,6 +94,17 @@ export const fr: Messages = {
     belongsTo: (actual, expected) => ` Cette clé appartient à ${actual}, pas à ${expected}.`
   },
 
+  signing: {
+    title: 'Signature des commits',
+    hint: (host) => `Ajoute un badge « Verified » à tes commits sur ${host} : la preuve qu'ils viennent bien de toi.`,
+    toggle: 'Signer les commits de ce compte',
+    needsKey: "Nécessite une clé SSH : crée-en une ou choisis-en une dans la carte Clé SSH.",
+    onHint: (host) => `Signe avec la même clé SSH. Ajoute-la une seconde fois sur ${host}, comme clé de signature.`,
+    githubTip: 'Sur GitHub, choisis « Signing Key » comme type de clé.',
+    addKey: (host) => `Ajouter la clé de signature sur ${host}`,
+    off: 'Désactivé : les commits de ce compte ne sont pas signés, même si le compte global signe.'
+  },
+
   https: {
     title: 'Connexion HTTPS',
     hint: (domain) => `Pour les remotes https://${domain}/…, via Git Credential Manager.`,
@@ -117,6 +128,7 @@ export const fr: Messages = {
     sshCommand: 'Commande SSH',
     httpsLogin: 'Connexion HTTPS',
     remote: 'Remote',
+    signing: 'Signature',
     defaultSsh: 'par défaut (~/.ssh/id_*)',
     notPinned: 'non fixée',
     none: 'aucun',
@@ -151,7 +163,9 @@ export const fr: Messages = {
     httpsOk: (user) => `Les push HTTPS se connectent en tant que ${user}.`,
     httpsNone: "Aucun compte GitHub n'est fixé pour les push HTTPS.",
     httpsNoneDetail: "Git Credential Manager utilisera son compte par défaut, ou demandera s'il en a plusieurs.",
-    noRemote: "Ce repo n'a pas de remote « origin »."
+    noRemote: "Ce repo n'a pas de remote « origin ».",
+    signed: 'Les commits sont signés.',
+    signingOff: 'Ce compte signe ses commits, mais ils ne seront pas signés dans ce repo.'
   },
 
   settings: {

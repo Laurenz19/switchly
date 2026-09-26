@@ -10,6 +10,7 @@ const account = (id: string): Account => ({
   host: 'github',
   username: id,
   sshKeyPath: null,
+  signCommits: false,
   color: '#000'
 })
 

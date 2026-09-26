@@ -16,6 +16,8 @@ export interface Account {
   username: string
   // Private SSH key used for this account's pushes, or null for the default.
   sshKeyPath: string | null
+  // Sign commits and tags with the SSH key (needs sshKeyPath).
+  signCommits: boolean
   color: string
 }
 
@@ -63,6 +65,8 @@ export interface RepoFacts {
   name: ConfigValue | null
   email: ConfigValue | null
   sshCommand: ConfigValue | null
+  // commit.gpgsign as the repo resolves it.
+  signing: ConfigValue | null
   credentialUser: string | null
   remoteUrl: string | null
   // The site the remote points at, when it's one Switchly knows.

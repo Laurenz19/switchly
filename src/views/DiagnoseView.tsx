@@ -107,6 +107,11 @@ export function DiagnoseView({ state }: { state: AppState }) {
                     value={facts.sshCommand?.value ?? t.diagnose.defaultSsh}
                     source={describeOrigin(facts.sshCommand, state, t)}
                   />
+                  <DetailRow
+                    label={t.diagnose.signing}
+                    value={facts.signing?.value}
+                    source={describeOrigin(facts.signing, state, t)}
+                  />
                   <DetailRow label={t.diagnose.httpsLogin} value={facts.credentialUser ?? t.diagnose.notPinned} />
                   <DetailRow label={t.diagnose.remote} value={facts.remoteUrl ?? t.diagnose.none} />
                 </tbody>

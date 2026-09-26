@@ -88,8 +88,29 @@ pub fn write_account_file(managed_dir: &Path, account: &Account) -> Result<(), S
     if let Some(key) = &account.ssh_key_path {
         git_ok(&["config", "--file", &f, "core.sshCommand", &ssh_command(key)])?;
     }
+    // Signing is written either way: explicitly off for an account that
+    // doesn't sign, so its repos never sign with the global account's key.
+    for (key, value) in signing_settings(account) {
+        git_ok(&["config", "--file", &f, key, &value])?;
+    }
     Ok(())
 }
+
+// SSH signing: git signs with ssh-keygen and the account's private key
+// (git accepts the private key path when no ssh-agent holds it).
+fn signing_settings(account: &Account) -> Vec<(&'static str, String)> {
+    match (&account.ssh_key_path, account.sign_commits) {
+        (Some(key), true) => vec![
+            ("gpg.format", "ssh".into()),
+            ("user.signingkey", key.replace('\\', "/")),
+            ("commit.gpgsign", "true".into()),
+            ("tag.gpgsign", "true".into()),
+        ],
+        _ => vec![("commit.gpgsign", "false".into()), ("tag.gpgsign", "false".into())],
+    }
+}
+
+const SIGNING_KEYS: [&str; 4] = ["gpg.format", "user.signingkey", "commit.gpgsign", "tag.gpgsign"];
 
 pub fn remove_account_file(managed_dir: &Path, id: &str) {
     let _ = std::fs::remove_file(account_file(managed_dir, id));
@@ -138,7 +159,9 @@ pub fn global_identity() -> Result<(Option<String>, Option<String>), String> {
 }
 
 // The identity used outside every rule's folder.
-pub fn switch_global(account: &Account) -> Result<(), String> {
+// `switchly_keys`: every SSH key Switchly manages, to tell its own global
+// signing setup apart from one the user made (e.g. with GPG), which it leaves alone.
+pub fn switch_global(account: &Account, switchly_keys: &[String]) -> Result<(), String> {
     git_ok(&["config", "--global", "user.name", &account.name])?;
     git_ok(&["config", "--global", "user.email", &account.email])?;
     // Only this account's host changes: switching to a GitLab account keeps
@@ -154,6 +177,19 @@ pub fn switch_global(account: &Account) -> Result<(), String> {
             git_ok(&["config", "--global", "core.sshCommand", &ssh_command(key)])?;
         }
         None => unset_global("core.sshCommand")?,
+    }
+    if account.sign_commits && account.ssh_key_path.is_some() {
+        for (key, value) in signing_settings(account) {
+            git_ok(&["config", "--global", key, &value])?;
+        }
+    } else {
+        let current = get_value(&["config", "--global", "--get", "user.signingkey"], None)?;
+        let ours = current.is_some_and(|k| switchly_keys.iter().any(|s| s.eq_ignore_ascii_case(&k.replace('\\', "/"))));
+        if ours {
+            for key in SIGNING_KEYS {
+                unset_global(key)?;
+            }
+        }
     }
     Ok(())
 }
@@ -204,6 +240,7 @@ pub fn repo_facts(path: &Path) -> Result<RepoFacts, String> {
         name: config_value(repo, "user.name")?,
         email: config_value(repo, "user.email")?,
         ssh_command: config_value(repo, "core.sshCommand")?,
+        signing: config_value(repo, "commit.gpgsign")?,
         top_level: Some(top_level),
         credential_user,
         remote_host: remote_host.map(|h| h.id.to_string()),

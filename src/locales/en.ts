@@ -96,6 +96,17 @@ export const en = {
     belongsTo: (actual: string, expected: string) => ` This key belongs to ${actual}, not ${expected}.`
   },
 
+  signing: {
+    title: 'Commit signing',
+    hint: (host: string) => `Adds a "Verified" badge to your commits on ${host}: proof they really come from you.`,
+    toggle: "Sign this account's commits",
+    needsKey: 'Needs an SSH key: create one or pick one in the SSH key card.',
+    onHint: (host: string) => `Signs with the same SSH key. Add it on ${host} a second time, as a signing key.`,
+    githubTip: 'On GitHub, choose "Signing Key" as the key type.',
+    addKey: (host: string) => `Add the signing key on ${host}`,
+    off: "Off: this account's commits aren't signed, even if the global account signs."
+  },
+
   https: {
     title: 'HTTPS login',
     hint: (domain: string) => `For https://${domain}/… remotes, through Git Credential Manager.`,
@@ -119,6 +130,7 @@ export const en = {
     sshCommand: 'SSH command',
     httpsLogin: 'HTTPS login',
     remote: 'Remote',
+    signing: 'Signing',
     defaultSsh: 'default (~/.ssh/id_*)',
     notPinned: 'not pinned',
     none: 'none',
@@ -154,7 +166,9 @@ export const en = {
     httpsOk: (user: string) => `Pushes over HTTPS log in as ${user}.`,
     httpsNone: 'No GitHub account is pinned for HTTPS pushes.',
     httpsNoneDetail: 'Git Credential Manager will use its default account, or ask if it has several.',
-    noRemote: 'This repo has no "origin" remote.'
+    noRemote: 'This repo has no "origin" remote.',
+    signed: 'Commits are signed.',
+    signingOff: "This account signs its commits, but they won't be signed in this repo."
   },
 
   settings: {

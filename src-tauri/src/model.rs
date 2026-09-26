@@ -17,6 +17,9 @@ pub struct Account {
     pub username: String,
     #[serde(default)]
     pub ssh_key_path: Option<String>,
+    // Sign commits and tags with the account's SSH key.
+    #[serde(default)]
+    pub sign_commits: bool,
     #[serde(default = "default_color")]
     pub color: String,
 }
@@ -92,6 +95,8 @@ pub struct RepoFacts {
     pub name: Option<ConfigValue>,
     pub email: Option<ConfigValue>,
     pub ssh_command: Option<ConfigValue>,
+    // commit.gpgsign as the repo resolves it.
+    pub signing: Option<ConfigValue>,
     pub credential_user: Option<String>,
     pub remote_url: Option<String>,
     // The host id the remote points at, when it's one Switchly knows.

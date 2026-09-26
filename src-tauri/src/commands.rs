@@ -19,6 +19,15 @@ fn new_id() -> String {
     format!("{nanos:x}")
 }
 
+// SSH keys Switchly set up, normalized like git config values.
+fn managed_keys(store: &Store) -> Vec<String> {
+    store.config.accounts.iter().filter_map(|a| a.ssh_key_path.as_ref()).map(|k| to_slashes(k)).collect()
+}
+
+fn to_slashes(path: &str) -> String {
+    path.replace('\\', "/")
+}
+
 fn find_account(store: &Store, id: &str) -> Result<Account, String> {
     store.config.accounts.iter().find(|a| a.id == id).cloned().ok_or_else(|| "That account no longer exists.".into())
 }
@@ -103,7 +112,7 @@ pub fn save_account(app: AppHandle, store: State<'_, SharedStore>, account: Acco
     git::write_account_file(&s.managed_dir, &account)?;
     s.save()?;
     if was_global {
-        git::switch_global(&account)?;
+        git::switch_global(&account, &managed_keys(&s))?;
     }
     changed(&app, &s);
     Ok(account)
@@ -152,7 +161,7 @@ pub fn switch_to(app: &AppHandle, id: &str) -> Result<Option<String>, String> {
     let s = lock(&store)?;
     let account = find_account(&s, id)?;
     git::write_account_file(&s.managed_dir, &account)?;
-    git::switch_global(&account)?;
+    git::switch_global(&account, &managed_keys(&s))?;
     // gh only knows GitHub.
     let warning = if account.host == "github" && !account.username.is_empty() && github::gh_available() {
         github::gh_switch(&account.username).err()
@@ -177,7 +186,7 @@ fn set_key(app: &AppHandle, s: &mut Store, id: &str, key: Option<String>) -> Res
     git::write_account_file(&s.managed_dir, &account)?;
     s.save()?;
     if was_global {
-        git::switch_global(&account)?;
+        git::switch_global(&account, &managed_keys(&s))?;
     }
     changed(app, s);
     Ok(())

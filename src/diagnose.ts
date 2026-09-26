@@ -66,6 +66,12 @@ export function diagnose(
     findings.push({ level: 'info', title: m.noRule(account?.label ?? email), detail: m.noRuleDetail })
   }
 
+  // Signing, as the repo resolves it.
+  if (email) {
+    if (facts.signing?.value === 'true') findings.push({ level: 'ok', title: m.signed })
+    else if (account?.signCommits) findings.push({ level: 'warn', title: m.signingOff })
+  }
+
   // Past commits made with a different email.
   const others = facts.recentEmails.filter((e) => !sameEmail(e.email, email))
   if (email && others.length > 0) {

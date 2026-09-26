@@ -438,6 +438,11 @@ select:focus-visible {
   gap: 6px;
 }
 
+/* The third card (signing) spans both columns. */
+.connections > .section:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
 .key-summary {
   display: flex;
   align-items: baseline;

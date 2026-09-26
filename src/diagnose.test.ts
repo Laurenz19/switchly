@@ -10,6 +10,7 @@ const work: Account = {
   host: 'github',
   username: 'me-work',
   sshKeyPath: 'C:/Users/me/.ssh/id_work',
+  signCommits: false,
   color: '#000'
 }
 const perso: Account = { ...work, id: 'perso', label: 'Perso', email: 'me@gmail.com', username: 'me', sshKeyPath: null }
@@ -22,6 +23,7 @@ const facts = (over: Partial<RepoFacts> = {}): RepoFacts => ({
   name: { value: 'Me', scope: 'global', origin: 'file:C:/Users/me/.switchly/work.gitconfig' },
   email: { value: 'me@work.com', scope: 'global', origin: 'file:C:/Users/me/.switchly/work.gitconfig' },
   sshCommand: null,
+  signing: null,
   credentialUser: null,
   remoteUrl: 'https://github.com/acme/api.git',
   remoteHost: 'github',
@@ -111,6 +113,14 @@ describe('diagnose', () => {
   it('warns when SSH ignores the account key', () => {
     const d = diagnose(facts({ remoteUrl: 'git@github.com:acme/api.git' }), 'C:/Dev/Work/api', accounts, rules)
     expect(d.findings.some((f) => f.level === 'warn' && f.title.includes('default key'))).toBe(true)
+  })
+
+  it('reports signed commits, and a signing account whose repo does not sign', () => {
+    const signed = diagnose(facts({ signing: { value: 'true', scope: 'global', origin: 'file:x' } }), 'C:/Dev/Work/api', accounts, rules)
+    expect(signed.findings.some((f) => f.level === 'ok' && f.title === 'Commits are signed.')).toBe(true)
+    const signer = { ...accounts[0], signCommits: true }
+    const unsigned = diagnose(facts({ signing: { value: 'false', scope: 'local', origin: 'file:.git/config' } }), 'C:/Dev/Work/api', [signer, accounts[1]], rules)
+    expect(unsigned.findings.some((f) => f.level === 'warn' && f.title.includes("won't be signed"))).toBe(true)
   })
 
   it('stops at a folder that is not a repo', () => {

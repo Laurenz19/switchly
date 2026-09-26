@@ -34,6 +34,7 @@ export const blankAccount = (): Account => ({
   host: 'github',
   username: '',
   sshKeyPath: null,
+  signCommits: false,
   color: ACCOUNT_COLORS[0]
 })
 
@@ -110,6 +111,7 @@ export function AccountPage({ account, state, onDeleted }: { account: Account; s
         <div className="connections">
           <HttpsSection account={account} />
           <SshSection account={account} />
+          <SigningSection account={account} />
         </div>
       )}
     </div>
@@ -426,6 +428,56 @@ function SshSection({ account }: { account: Account }) {
             !sameUser(test.username, account.username) &&
             t.ssh.belongsTo(test.username ?? '', account.username)}
         </Notice>
+      )}
+      {error && <Notice kind="error">{error}</Notice>}
+    </Section>
+  )
+}
+
+// SSH commit signing, with the account's own key.
+function SigningSection({ account }: { account: Account }) {
+  const t = useT()
+  const host = hostInfo(account.host)
+  const [error, setError] = useState<string | null>(null)
+  const hasKey = !!account.sshKeyPath
+
+  async function toggle(on: boolean): Promise<void> {
+    try {
+      await api.saveAccount({ ...account, signCommits: on })
+      setError(null)
+    } catch (e) {
+      setError(errorMessage(e))
+    }
+  }
+
+  return (
+    <Section title={t.signing.title} hint={t.signing.hint(host.name)}>
+      <label className="toggle-row">
+        <input
+          type="checkbox"
+          checked={account.signCommits && hasKey}
+          disabled={!hasKey}
+          onChange={(e) => toggle(e.target.checked)}
+        />
+        <span>{t.signing.toggle}</span>
+      </label>
+      {!hasKey ? (
+        <p className="hint">{t.signing.needsKey}</p>
+      ) : account.signCommits ? (
+        <>
+          <p className="hint">
+            {t.signing.onHint(host.name)}
+            {host.id === 'github' && ` ${t.signing.githubTip}`}
+          </p>
+          <div className="actions">
+            <button className="btn btn-small" onClick={() => openUrl(host.sshKeysUrl)}>
+              <ExternalLink size={14} aria-hidden="true" />
+              {t.signing.addKey(host.name)}
+            </button>
+          </div>
+        </>
+      ) : (
+        <p className="hint">{t.signing.off}</p>
       )}
       {error && <Notice kind="error">{error}</Notice>}
     </Section>
