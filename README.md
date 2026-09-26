@@ -8,6 +8,21 @@
 
 Work with several Git accounts, like a personal GitHub, a work GitLab and a client's Bitbucket? Tell Switchly which account each folder uses. Every repository inside it then commits with the right name and email and pushes with the right login, and you stop pushing to a client's repo as yourself.
 
+<p align="center">
+  <img src="docs/screenshots/folders.png" width="720" alt="Switchly's main window: accounts in the sidebar, and the Folders tab of the selected account listing the folders it's used in">
+</p>
+
+## Requirements
+
+- **Windows 10 or 11**, x64 or ARM64.
+- **[Git for Windows](https://git-scm.com/download/win) (required).** Switchly configures git and doesn't work without it. Git for Windows also installs **Git Credential Manager**, which Switchly uses for HTTPS logins. Keep its default options when installing. To check it's there, run in a terminal:
+  ```
+  git --version
+  git credential-manager --version
+  ```
+- **OpenSSH**, only for SSH remotes. It's built into Windows 10 and 11.
+- **GitHub CLI** (`gh`), optional: when it's installed, switching the global account also switches `gh`.
+
 ## Install
 
 Download the latest installer from **[Releases](../../releases/latest)**:
@@ -20,8 +35,6 @@ Download the latest installer from **[Releases](../../releases/latest)**:
 
 The installer isn't signed yet. If Windows SmartScreen warns, click **More info**, then **Run anyway**.
 
-Switchly needs **Git for Windows**, which includes Git Credential Manager. The **GitHub CLI** (`gh`) is optional.
-
 ## Getting started
 
 1. **Add your accounts.** For each one: a label ("Personal", "Client A"), the commit name and email, its platform (GitHub, GitLab or Bitbucket) and its username there.
@@ -32,8 +45,19 @@ Switchly needs **Git for Windows**, which includes Git Credential Manager. The *
 4. **Pick a global account** with **Make global**. It's used in every repository that no folder covers.
 5. **Check a repository** whenever you're unsure: Switchly shows which identity it will commit and push with, where each setting comes from, and what looks wrong.
 
+## Screenshots
+
+| Identity | Connections |
+|---|---|
+| ![The Identity tab: label, commit name and email, platform (GitHub, GitLab or Bitbucket), username and color](docs/screenshots/identity.png) | ![The Connections tab: the HTTPS login through Git Credential Manager, and the account's SSH key with Copy, Add on GitHub and Test](docs/screenshots/connections.png) |
+
+| Settings | |
+|---|---|
+| ![Settings: theme, language and startup](docs/screenshots/settings.png) | ![Settings: Git Credential Manager logins, GitHub CLI, and what Switchly changes](docs/screenshots/settings-more.png) |
+
 ## Everyday use
 
+- Each account shows its platform with a colored badge: GitHub, GitLab or Bitbucket.
 - The **tray icon** next to the clock shows the global account on hover.
 - **Left click**: a small popup to switch the global account in one click.
 - **Right click**: a menu to switch, open Switchly or quit.
