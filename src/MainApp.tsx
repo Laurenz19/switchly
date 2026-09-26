@@ -1,3 +1,4 @@
+import { Search, Settings, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useAppState } from './api'
 import { Avatar, Notice } from './components'
@@ -44,7 +45,8 @@ export function MainApp() {
           )
         })}
         <button className={`add-account ${current.kind === 'new' ? 'is-selected' : ''}`} onClick={() => setRoute({ kind: 'new' })}>
-          + Add account
+          <UserPlus size={16} aria-hidden="true" />
+          Add account
         </button>
 
         <div className="sidebar-tools">
@@ -52,20 +54,14 @@ export function MainApp() {
             className={`nav-item ${current.kind === 'diagnose' ? 'is-active' : ''}`}
             onClick={() => setRoute({ kind: 'diagnose' })}
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
-            </svg>
+            <Search size={17} aria-hidden="true" />
             Check a repo
           </button>
           <button
             className={`nav-item ${current.kind === 'settings' ? 'is-active' : ''}`}
             onClick={() => setRoute({ kind: 'settings' })}
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
-            </svg>
+            <Settings size={17} aria-hidden="true" />
             Settings
           </button>
         </div>

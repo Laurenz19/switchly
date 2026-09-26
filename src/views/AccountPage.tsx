@@ -1,6 +1,23 @@
 import { homeDir, join } from '@tauri-apps/api/path'
 import { ask, open } from '@tauri-apps/plugin-dialog'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  FileKey,
+  Folder,
+  FolderPlus,
+  Globe,
+  KeyRound,
+  LogIn,
+  PlugZap,
+  RotateCcw,
+  Save,
+  Trash2,
+  UserPlus,
+  X
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { ACCOUNT_COLORS, Avatar, EmptyState, Notice, Section } from '../components'
@@ -59,6 +76,7 @@ export function AccountPage({ account, state, onDeleted }: { account: Account; s
           </span>
         ) : (
           <button className="btn" onClick={makeGlobal} title="Use this account in every repo that no folder covers">
+            <Globe size={15} aria-hidden="true" />
             Make global
           </button>
         )}
@@ -144,15 +162,14 @@ function FoldersTab({ account, state }: { account: Account; state: AppState }) {
         <div className="folders">
           {mine.map((rule) => (
             <div className="folder-row" key={rule.folder}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
-              </svg>
+              <Folder size={18} aria-hidden="true" />
               <code title={rule.folder}>{rule.folder}</code>
               <button
                 className="btn btn-small btn-danger-ghost"
                 aria-label={`Remove ${rule.folder}`}
                 onClick={() => save(state.rules.filter((r) => r.folder !== rule.folder))}
               >
+                <X size={14} aria-hidden="true" />
                 Remove
               </button>
             </div>
@@ -161,7 +178,8 @@ function FoldersTab({ account, state }: { account: Account; state: AppState }) {
       )}
       <div className="actions">
         <button className="btn btn-primary" onClick={addFolder}>
-          + Add a folder
+          <FolderPlus size={15} aria-hidden="true" />
+          Add a folder
         </button>
         <span className="hint">
           Outside every folder: <strong>{global?.label ?? state.global.email ?? 'no identity'}</strong> (global)
@@ -259,11 +277,13 @@ export function AccountEditor({
       {error && <Notice kind="error">{error}</Notice>}
       <div className="actions">
         <button className="btn btn-primary" disabled={!dirty} onClick={save}>
+          {isNew ? <UserPlus size={15} aria-hidden="true" /> : <Save size={15} aria-hidden="true" />}
           {isNew ? 'Add account' : 'Save'}
         </button>
         {saved && !dirty && <span className="saved">Saved</span>}
         {!isNew && (
           <button className="btn btn-danger push-right" onClick={remove}>
+            <Trash2 size={15} aria-hidden="true" />
             Delete account
           </button>
         )}
@@ -333,6 +353,7 @@ function SshSection({ account }: { account: Account }) {
                 setTimeout(() => setCopied(false), 1500)
               }}
             >
+              {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
               {copied ? 'Copied' : 'Copy'}
             </button>
             <button
@@ -340,26 +361,31 @@ function SshSection({ account }: { account: Account }) {
               title={`Sign in to GitHub as ${githubUser} first`}
               onClick={() => openUrl('https://github.com/settings/ssh/new')}
             >
+              <ExternalLink size={14} aria-hidden="true" />
               Add on GitHub
             </button>
           </>
         )}
         {!account.sshKeyPath && (
           <button className="btn btn-small btn-primary" disabled={busy} onClick={generate}>
+            <KeyRound size={14} aria-hidden="true" />
             Create a key
           </button>
         )}
         <button className="btn btn-small" disabled={busy} onClick={testConnection}>
+          <PlugZap size={14} aria-hidden="true" />
           {busy ? 'Testing…' : 'Test'}
         </button>
       </div>
       {publicKey && <p className="hint">Add it while signed in to GitHub as {githubUser}.</p>}
       <div className="link-actions">
         <button className="link-btn" disabled={busy} onClick={pickExisting}>
+          <FileKey size={14} aria-hidden="true" />
           Use another key…
         </button>
         {account.sshKeyPath && (
           <button className="link-btn" disabled={busy} onClick={useDefault}>
+            <RotateCcw size={14} aria-hidden="true" />
             Use the default key
           </button>
         )}
@@ -423,6 +449,7 @@ function HttpsSection({ account }: { account: Account }) {
           <Notice kind="warn">Not signed in as {account.githubUser} yet</Notice>
           <div className="actions">
             <button className="btn btn-small btn-primary" disabled={busy} onClick={login}>
+              <LogIn size={14} aria-hidden="true" />
               {busy ? 'Waiting for sign-in…' : `Sign in as ${account.githubUser}`}
             </button>
           </div>

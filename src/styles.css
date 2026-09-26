@@ -88,6 +88,12 @@ button {
 
 /* Buttons ---------------------------------------------------------------- */
 
+.btn svg,
+.link-btn svg,
+.nav-item svg {
+  flex: none;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -120,7 +126,8 @@ button {
 }
 
 .btn-small {
-  padding: 3px 10px;
+  gap: 5px;
+  padding: 3px 9px;
   font-size: 13px;
 }
 
@@ -220,6 +227,10 @@ select:focus-visible {
 }
 
 .add-account {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin-top: 4px;
   min-height: 44px;
   border: 1px dashed var(--border);
@@ -360,6 +371,10 @@ select:focus-visible {
   gap: 10px;
 }
 
+.connections .actions {
+  gap: 6px;
+}
+
 .key-summary {
   display: flex;
   align-items: baseline;
@@ -398,6 +413,9 @@ select:focus-visible {
 }
 
 .link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 2px 0;
   border: 0;
   background: transparent;

@@ -1,4 +1,5 @@
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
+import { UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { Notice, Section } from '../components'
@@ -69,6 +70,7 @@ export function SettingsView({ state }: { state: AppState }) {
         )}
         <div className="actions">
           <button className="btn" disabled={busy} onClick={addGcmAccount}>
+            <UserPlus size={15} aria-hidden="true" />
             {busy ? 'Waiting for the sign-in window…' : 'Add a GitHub account'}
           </button>
         </div>

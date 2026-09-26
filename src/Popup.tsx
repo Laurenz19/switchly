@@ -1,3 +1,4 @@
+import { AppWindow } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage, useAppState } from './api'
 import { Avatar, Notice, shortFolder } from './components'
@@ -92,6 +93,7 @@ export function Popup() {
 
       <footer className="popup-footer">
         <button className="btn btn-small" onClick={() => api.openMain()}>
+          <AppWindow size={14} aria-hidden="true" />
           Open Switchly
         </button>
       </footer>

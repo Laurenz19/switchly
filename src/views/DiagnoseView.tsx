@@ -1,4 +1,5 @@
 import { open } from '@tauri-apps/plugin-dialog'
+import { FolderSearch, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { api, errorMessage } from '../api'
 import { Avatar, Notice, Section } from '../components'
@@ -53,10 +54,12 @@ export function DiagnoseView({ state }: { state: AppState }) {
       >
         <div className="actions">
           <button className="btn btn-primary" disabled={busy} onClick={pick}>
+            <FolderSearch size={15} aria-hidden="true" />
             {busy ? 'Checking…' : 'Choose a repository…'}
           </button>
           {path && (
             <button className="btn" disabled={busy} onClick={() => check(path)}>
+              <RefreshCw size={15} aria-hidden="true" />
               Check again
             </button>
           )}
