@@ -7,7 +7,8 @@ const account = (id: string): Account => ({
   label: id,
   name: id,
   email: `${id}@example.com`,
-  githubUser: id,
+  host: 'github',
+  username: id,
   sshKeyPath: null,
   color: '#000'
 })

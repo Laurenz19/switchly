@@ -337,6 +337,21 @@ select:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.account-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.host-badge {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .pill-ok {
   flex: none;
   padding: 5px 12px;

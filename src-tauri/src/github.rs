@@ -1,6 +1,10 @@
-// The GitHub-side tools: the gh CLI (optional) and Git Credential Manager,
-// which ships with Git for Windows and holds the HTTPS logins.
+// The hosting-side tools: the gh CLI (optional, GitHub only) and Git
+// Credential Manager, which ships with Git for Windows and holds the HTTPS
+// logins for GitHub, GitLab and Bitbucket.
+use crate::hosts::Host;
 use crate::proc::{command, run, stderr, stdout};
+use std::io::Write;
+use std::process::{Output, Stdio};
 
 pub fn gh_available() -> bool {
     run("gh", &["--version"], None).map(|o| o.status.success()).unwrap_or(false)
@@ -53,5 +57,52 @@ pub fn gcm_login() -> Result<(), String> {
         Ok(())
     } else {
         Err(format!("Sign-in didn't complete: {}", stderr(&out)))
+    }
+}
+
+// Runs `git credential <action>` with the given request on stdin: the
+// standard protocol git itself uses, which works for every host GCM knows,
+// unlike `git credential-manager github ...` (GitHub only). Secrets only ever
+// travel between git's processes here; nothing is logged or returned to the UI.
+fn credential(action: &str, input: &str, interactive: bool) -> Result<Output, String> {
+    let mut cmd = command("git");
+    cmd.args(["credential", action]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
+    if interactive {
+        // See gcm_login: the user asked for this sign-in window.
+        cmd.env("GCM_INTERACTIVE", "always").env_remove("GIT_TERMINAL_PROMPT");
+    } else {
+        cmd.env("GCM_INTERACTIVE", "never").env("GIT_TERMINAL_PROMPT", "0");
+    }
+    let mut child = cmd.spawn().map_err(|e| format!("Could not run git: {e}"))?;
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(input.as_bytes()).map_err(|e| format!("Could not talk to git: {e}"))?;
+    }
+    child.wait_with_output().map_err(|e| format!("git credential {action} failed: {e}"))
+}
+
+fn request(host: &Host, username: &str) -> String {
+    format!("protocol=https\nhost={}\nusername={username}\n\n", host.domain)
+}
+
+// Whether GCM already holds a login for this user on this host. Never
+// prompts: without one, GCM fails fast instead.
+pub fn credential_status(host: &Host, username: &str) -> bool {
+    credential("fill", &request(host, username), false)
+        .map(|out| out.status.success() && String::from_utf8_lossy(&out.stdout).contains("password="))
+        .unwrap_or(false)
+}
+
+// Opens GCM's sign-in window for this host (GitHub, GitLab or Bitbucket),
+// then asks git to store the login, as it does after a successful push.
+pub fn credential_login(host: &Host, username: &str) -> Result<(), String> {
+    let filled = credential("fill", &request(host, username), true)?;
+    if !filled.status.success() {
+        return Err(format!("Sign-in to {} didn't complete: {}", host.name, stderr(&filled)));
+    }
+    let stored = credential("approve", &String::from_utf8_lossy(&filled.stdout), false)?;
+    if stored.status.success() {
+        Ok(())
+    } else {
+        Err(format!("Signed in, but the login couldn't be saved: {}", stderr(&stored)))
     }
 }

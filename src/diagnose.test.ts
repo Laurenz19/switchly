@@ -7,11 +7,12 @@ const work: Account = {
   label: 'Work',
   name: 'Me',
   email: 'me@work.com',
-  githubUser: 'me-work',
+  host: 'github',
+  username: 'me-work',
   sshKeyPath: 'C:/Users/me/.ssh/id_work',
   color: '#000'
 }
-const perso: Account = { ...work, id: 'perso', label: 'Perso', email: 'me@gmail.com', githubUser: 'me', sshKeyPath: null }
+const perso: Account = { ...work, id: 'perso', label: 'Perso', email: 'me@gmail.com', username: 'me', sshKeyPath: null }
 const accounts = [work, perso]
 const rules = [{ folder: 'C:/Dev/Work/', accountId: 'work' }]
 
@@ -23,6 +24,7 @@ const facts = (over: Partial<RepoFacts> = {}): RepoFacts => ({
   sshCommand: null,
   credentialUser: null,
   remoteUrl: 'https://github.com/acme/api.git',
+  remoteHost: 'github',
   recentEmails: [],
   ...over
 })
@@ -94,6 +96,16 @@ describe('diagnose', () => {
   it('warns when HTTPS logs in as the wrong GitHub user', () => {
     const d = diagnose(facts({ credentialUser: 'me' }), 'C:/Dev/Work/api', accounts, rules)
     expect(d.findings.some((f) => f.level === 'warn' && f.title.includes('me-work'))).toBe(true)
+  })
+
+  it("doesn't expect a GitHub login on a GitLab remote", () => {
+    const d = diagnose(
+      facts({ remoteUrl: 'https://gitlab.com/acme/api.git', remoteHost: 'gitlab', credentialUser: 'someone' }),
+      'C:/Dev/Work/api',
+      accounts,
+      rules
+    )
+    expect(d.findings.some((f) => f.level === 'warn' && f.title.includes('someone'))).toBe(false)
   })
 
   it('warns when SSH ignores the account key', () => {

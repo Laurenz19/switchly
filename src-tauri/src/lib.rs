@@ -1,6 +1,7 @@
 mod commands;
 mod git;
 mod github;
+mod hosts;
 mod model;
 mod proc;
 mod ssh;
@@ -60,6 +61,8 @@ pub fn run() {
             commands::set_ssh_key,
             commands::public_key,
             commands::test_ssh,
+            commands::credential_status,
+            commands::credential_login,
             commands::gcm_accounts,
             commands::gcm_login,
             commands::diagnose_repo,

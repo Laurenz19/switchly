@@ -1,3 +1,5 @@
+import type { HostId } from './hosts'
+
 // Mirrors the serde types in src-tauri/src/model.rs (camelCase on the wire).
 
 export interface Account {
@@ -7,9 +9,11 @@ export interface Account {
   // Commit identity (user.name / user.email).
   name: string
   email: string
-  // GitHub login: picks the Git Credential Manager account for HTTPS and the
-  // gh CLI account. Empty when the account doesn't use GitHub.
-  githubUser: string
+  // The site the account lives on.
+  host: HostId
+  // The login on that site: picks the Git Credential Manager login for HTTPS
+  // (and the gh CLI account on GitHub). Empty when not set.
+  username: string
   // Private SSH key used for this account's pushes, or null for the default.
   sshKeyPath: string | null
   color: string
@@ -61,12 +65,14 @@ export interface RepoFacts {
   sshCommand: ConfigValue | null
   credentialUser: string | null
   remoteUrl: string | null
+  // The site the remote points at, when it's one Switchly knows.
+  remoteHost: HostId | null
   recentEmails: EmailCount[]
 }
 
 export interface SshTest {
   ok: boolean
-  // The GitHub login the key authenticates as, when it worked.
-  githubUser: string | null
+  // The login the key authenticates as, when it worked.
+  username: string | null
   message: string
 }

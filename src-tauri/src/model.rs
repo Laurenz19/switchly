@@ -8,12 +8,21 @@ pub struct Account {
     pub label: String,
     pub name: String,
     pub email: String,
-    #[serde(default)]
-    pub github_user: String,
+    // github | gitlab | bitbucket (see hosts.rs).
+    #[serde(default = "default_host")]
+    pub host: String,
+    // The login on that host. Read from "githubUser" too: the field's name
+    // before GitLab and Bitbucket were supported.
+    #[serde(default, alias = "githubUser")]
+    pub username: String,
     #[serde(default)]
     pub ssh_key_path: Option<String>,
     #[serde(default = "default_color")]
     pub color: String,
+}
+
+fn default_host() -> String {
+    "github".into()
 }
 
 fn default_color() -> String {
@@ -85,6 +94,8 @@ pub struct RepoFacts {
     pub ssh_command: Option<ConfigValue>,
     pub credential_user: Option<String>,
     pub remote_url: Option<String>,
+    // The host id the remote points at, when it's one Switchly knows.
+    pub remote_host: Option<String>,
     pub recent_emails: Vec<EmailCount>,
 }
 
@@ -92,6 +103,6 @@ pub struct RepoFacts {
 #[serde(rename_all = "camelCase")]
 pub struct SshTest {
     pub ok: bool,
-    pub github_user: Option<String>,
+    pub username: Option<String>,
     pub message: String,
 }

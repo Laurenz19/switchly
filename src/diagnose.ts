@@ -84,7 +84,10 @@ export function diagnose(
       findings.push({ level: 'info', title: m.sshDefault })
     }
   } else if (kind === 'https') {
-    const expected = ruleAccount?.githubUser || account?.githubUser
+    // Only an account on the remote's site says which login to expect.
+    const onRemoteHost = (a: Account | null): Account | null =>
+      a && (!facts.remoteHost || a.host === facts.remoteHost) ? a : null
+    const expected = onRemoteHost(ruleAccount)?.username || onRemoteHost(account)?.username
     if (facts.credentialUser) {
       if (expected && facts.credentialUser.toLowerCase() !== expected.toLowerCase()) {
         findings.push({ level: 'warn', title: m.httpsWrongUser(facts.credentialUser, expected) })

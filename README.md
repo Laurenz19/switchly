@@ -4,9 +4,9 @@
 
 <h1 align="center">Switchly</h1>
 
-<p align="center">Use the right GitHub account in every folder, from the Windows tray.</p>
+<p align="center">Use the right GitHub, GitLab or Bitbucket account in every folder, from the Windows tray.</p>
 
-Work with several GitHub accounts, like a personal one and one per client or employer? Tell Switchly which account each folder uses. Every repository inside it then commits with the right name and email and pushes with the right login, and you stop pushing to a client's repo as yourself.
+Work with several Git accounts, like a personal GitHub, a work GitLab and a client's Bitbucket? Tell Switchly which account each folder uses. Every repository inside it then commits with the right name and email and pushes with the right login, and you stop pushing to a client's repo as yourself.
 
 ## Install
 
@@ -24,11 +24,11 @@ Switchly needs **Git for Windows**, which includes Git Credential Manager. The *
 
 ## Getting started
 
-1. **Add your accounts.** For each one: a label ("Personal", "Client A"), the commit name and email, and the GitHub username.
+1. **Add your accounts.** For each one: a label ("Personal", "Client A"), the commit name and email, its platform (GitHub, GitLab or Bitbucket) and its username there.
 2. **Give each account its folders.** In the account's **Folders** tab, add the folders that hold its repositories, like `C:\Dev\ClientA`. Every repository inside a folder uses that account. When folders are nested, the deepest one wins.
 3. **Connect each account** in the **Connections** tab:
-   - **HTTPS** (`https://github.com/...` remotes): sign in once per GitHub account through Git Credential Manager.
-   - **SSH** (`git@github.com:...` remotes): create a key for the account, click **Add on GitHub** while signed in with that account, then **Test**.
+   - **HTTPS** (`https://...` remotes): sign in once per account through Git Credential Manager, which handles GitHub, GitLab and Bitbucket logins.
+   - **SSH** (`git@...` remotes): create a key for the account, click **Add on GitHub/GitLab/Bitbucket** while signed in with that account, then **Test**.
 4. **Pick a global account** with **Make global**. It's used in every repository that no folder covers.
 5. **Check a repository** whenever you're unsure: Switchly shows which identity it will commit and push with, where each setting comes from, and what looks wrong.
 
@@ -43,10 +43,10 @@ Switchly needs **Git for Windows**, which includes Git Credential Manager. The *
 
 ## How it works
 
-Switchly only writes standard git configuration, so your setup keeps working even when Switchly isn't running:
+Switchly only writes standard git configuration, and leaves logins to Git Credential Manager: it never stores or sees a token. Your setup keeps working even when Switchly isn't running:
 
 - `~/.gitconfig`: the global identity, plus one `includeIf "gitdir/i:<folder>/"` entry per folder.
-- `~/.switchly/<account>.gitconfig`: one file per account with its `user.name`, `user.email`, `core.sshCommand` and the GitHub login Git Credential Manager should use.
+- `~/.switchly/<account>.gitconfig`: one file per account with its `user.name`, `user.email`, `core.sshCommand` and the login Git Credential Manager should use on its platform (`credential.https://<site>.username`).
 - `~/.ssh/id_ed25519_switchly_*`: SSH keys you create in Switchly. Deleting an account never deletes its key.
 
 ## Development

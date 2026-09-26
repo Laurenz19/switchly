@@ -16,6 +16,9 @@ export const api = {
   publicKey: (id: string) => invoke<string | null>('public_key', { id }),
   testSsh: (id: string) => invoke<SshTest>('test_ssh', { id }),
   gcmAccounts: () => invoke<string[]>('gcm_accounts'),
+  // Whether Git Credential Manager holds the account's HTTPS login.
+  credentialStatus: (id: string) => invoke<boolean>('credential_status', { id }),
+  credentialLogin: (id: string) => invoke<void>('credential_login', { id }),
   gcmLogin: () => invoke<void>('gcm_login'),
   diagnoseRepo: (path: string) => invoke<RepoFacts>('diagnose_repo', { path }),
   openMain: () => invoke<void>('open_main'),

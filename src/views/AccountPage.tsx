@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
 import { ACCOUNT_COLORS, Avatar, EmptyState, Notice, Section } from '../components'
+import { HOSTS, hostInfo } from '../hosts'
 import { fill, useT } from '../i18n'
 import { normalizeFolder } from '../rules'
 import type { Account, AppState, Rule, SshTest } from '../types'
@@ -30,7 +31,8 @@ export const blankAccount = (): Account => ({
   label: '',
   name: '',
   email: '',
-  githubUser: '',
+  host: 'github',
+  username: '',
   sshKeyPath: null,
   color: ACCOUNT_COLORS[0]
 })
@@ -67,7 +69,10 @@ export function AccountPage({ account, state, onDeleted }: { account: Account; s
       <header className="account-header">
         <Avatar account={account} size={48} />
         <div className="account-heading">
-          <h2>{account.label}</h2>
+          <h2>
+            {account.label}
+            <span className="host-badge">{hostInfo(account.host).name}</span>
+          </h2>
           <p className="hint">
             {account.name} · {account.email}
           </p>
@@ -256,12 +261,28 @@ export function AccountEditor({
           <span>{t.editor.email}</span>
           <input value={draft.email} placeholder={t.editor.emailPlaceholder} onChange={(e) => set('email', e.target.value)} />
         </label>
+        <div className="field">
+          <span>{t.editor.platform}</span>
+          <div className="segmented" role="radiogroup" aria-label={t.editor.platform}>
+            {HOSTS.map((h) => (
+              <button
+                key={h.id}
+                role="radio"
+                aria-checked={draft.host === h.id}
+                className={`segment ${draft.host === h.id ? 'is-active' : ''}`}
+                onClick={() => set('host', h.id)}
+              >
+                {h.name}
+              </button>
+            ))}
+          </div>
+        </div>
         <label>
-          <span>{t.editor.githubUser}</span>
+          <span>{t.editor.username(hostInfo(draft.host).name)}</span>
           <input
-            value={draft.githubUser}
-            placeholder={t.editor.githubUserPlaceholder}
-            onChange={(e) => set('githubUser', e.target.value)}
+            value={draft.username}
+            placeholder={t.editor.usernamePlaceholder}
+            onChange={(e) => set('username', e.target.value)}
           />
         </label>
         <div className="field">
@@ -335,10 +356,11 @@ function SshSection({ account }: { account: Account }) {
     })
   const testConnection = (): Promise<void> => run(async () => setTest(await api.testSsh(account.id)))
 
-  const githubUser = account.githubUser || t.ssh.thisAccount
+  const host = hostInfo(account.host)
+  const user = account.username || t.ssh.thisAccount
 
   return (
-    <Section title={t.ssh.title} hint={t.ssh.hint}>
+    <Section title={t.ssh.title} hint={t.ssh.hint(host.domain, host.name)}>
       <div className="key-summary" title={account.sshKeyPath ?? undefined}>
         <span className="key-label">{account.sshKeyPath ? t.ssh.key : t.ssh.uses}</span>
         <code>{account.sshKeyPath ? shortenHome(account.sshKeyPath) : t.ssh.defaultKey}</code>
@@ -364,11 +386,11 @@ function SshSection({ account }: { account: Account }) {
             </button>
             <button
               className="btn btn-small"
-              title={t.ssh.addOnGithubTitle(githubUser)}
-              onClick={() => openUrl('https://github.com/settings/ssh/new')}
+              title={t.ssh.addOnHostTitle(host.name, user)}
+              onClick={() => openUrl(host.sshKeysUrl)}
             >
               <ExternalLink size={14} aria-hidden="true" />
-              {t.ssh.addOnGithub}
+              {t.ssh.addOnHost(host.name)}
             </button>
           </>
         )}
@@ -383,7 +405,7 @@ function SshSection({ account }: { account: Account }) {
           {busy ? t.ssh.testing : t.ssh.test}
         </button>
       </div>
-      {publicKey && <p className="hint">{t.ssh.addWhileSignedIn(githubUser)}</p>}
+      {publicKey && <p className="hint">{t.ssh.addWhileSignedIn(host.name, user)}</p>}
       <div className="link-actions">
         <button className="link-btn" disabled={busy} onClick={pickExisting}>
           <FileKey size={14} aria-hidden="true" />
@@ -397,12 +419,12 @@ function SshSection({ account }: { account: Account }) {
         )}
       </div>
       {test && (
-        <Notice kind={test.ok ? (sameUser(test.githubUser, account.githubUser) ? 'ok' : 'warn') : 'error'}>
+        <Notice kind={test.ok ? (sameUser(test.username, account.username) ? 'ok' : 'warn') : 'error'}>
           {test.message}
           {test.ok &&
-            account.githubUser &&
-            !sameUser(test.githubUser, account.githubUser) &&
-            t.ssh.belongsTo(test.githubUser ?? '', account.githubUser)}
+            account.username &&
+            !sameUser(test.username, account.username) &&
+            t.ssh.belongsTo(test.username ?? '', account.username)}
         </Notice>
       )}
       {error && <Notice kind="error">{error}</Notice>}
@@ -421,20 +443,26 @@ function sameUser(a: string | null, b: string): boolean {
 
 function HttpsSection({ account }: { account: Account }) {
   const t = useT()
-  const [accounts, setAccounts] = useState<string[] | null>(null)
+  const host = hostInfo(account.host)
+  // null while checking.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = (): void => {
-    api.gcmAccounts().then(setAccounts, (e) => setError(errorMessage(e)))
+    setSignedIn(null)
+    api.credentialStatus(account.id).then(setSignedIn, (e) => {
+      setSignedIn(false)
+      setError(errorMessage(e))
+    })
   }
-  useEffect(refresh, [])
+  useEffect(refresh, [account.id, account.host, account.username])
 
   async function login(): Promise<void> {
     setBusy(true)
     setError(null)
     try {
-      await api.gcmLogin()
+      await api.credentialLogin(account.id)
       refresh()
     } catch (e) {
       setError(errorMessage(e))
@@ -443,26 +471,24 @@ function HttpsSection({ account }: { account: Account }) {
     }
   }
 
-  const signedIn = accounts?.some((a) => a.toLowerCase() === account.githubUser.toLowerCase()) ?? false
-
   return (
-    <Section title={t.https.title} hint={t.https.hint}>
-      {!account.githubUser ? (
-        <Notice kind="info">{t.https.noUser}</Notice>
-      ) : accounts === null ? (
+    <Section title={t.https.title} hint={t.https.hint(host.domain)}>
+      {!account.username ? (
+        <Notice kind="info">{t.https.noUser(host.name)}</Notice>
+      ) : signedIn === null ? (
         <p className="hint">{t.common.checking}</p>
       ) : signedIn ? (
-        <Notice kind="ok">{t.https.signedIn(account.githubUser)}</Notice>
+        <Notice kind="ok">{t.https.signedIn(account.username)}</Notice>
       ) : (
         <>
-          <Notice kind="warn">{t.https.notSignedIn(account.githubUser)}</Notice>
+          <Notice kind="warn">{t.https.notSignedIn(account.username)}</Notice>
           <div className="actions">
             <button className="btn btn-small btn-primary" disabled={busy} onClick={login}>
               <LogIn size={14} aria-hidden="true" />
-              {busy ? t.https.waiting : t.https.signIn(account.githubUser)}
+              {busy ? t.https.waiting : t.https.signIn(account.username)}
             </button>
           </div>
-          <p className="hint">{t.https.switchBrowser}</p>
+          <p className="hint">{t.https.switchBrowser(host.name)}</p>
         </>
       )}
       {error && <Notice kind="error">{error}</Notice>}

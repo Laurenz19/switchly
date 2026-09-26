@@ -65,7 +65,8 @@ pub fn save_account(app: AppHandle, store: State<'_, SharedStore>, account: Acco
         label: account.label.trim().to_string(),
         name: account.name.trim().to_string(),
         email: account.email.trim().to_string(),
-        github_user: account.github_user.trim().to_string(),
+        username: account.username.trim().to_string(),
+        host: crate::hosts::by_id(&account.host).id.to_string(),
         ..account
     };
     if account.label.is_empty() || account.name.is_empty() || account.email.is_empty() {
@@ -74,12 +75,15 @@ pub fn save_account(app: AppHandle, store: State<'_, SharedStore>, account: Acco
     // GitHub logins are case-insensitive, but Git Credential Manager finds a
     // stored login only by its exact spelling: "laurenz19" misses "Laurenz19"
     // and GCM asks to sign in again. Use the spelling GCM already has.
-    if let Some(known) = github::gcm_accounts()
-        .unwrap_or_default()
-        .into_iter()
-        .find(|u| u.eq_ignore_ascii_case(&account.github_user))
-    {
-        account.github_user = known;
+    // (Only GitHub: GCM can list its logins for GitHub alone.)
+    if account.host == "github" {
+        if let Some(known) = github::gcm_accounts()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|u| u.eq_ignore_ascii_case(&account.username))
+        {
+            account.username = known;
+        }
     }
     if s.config.accounts.iter().any(|a| a.id != account.id && a.email.eq_ignore_ascii_case(&account.email)) {
         return Err(format!("Another account already uses {}.", account.email));
@@ -149,8 +153,9 @@ pub fn switch_to(app: &AppHandle, id: &str) -> Result<Option<String>, String> {
     let account = find_account(&s, id)?;
     git::write_account_file(&s.managed_dir, &account)?;
     git::switch_global(&account)?;
-    let warning = if !account.github_user.is_empty() && github::gh_available() {
-        github::gh_switch(&account.github_user).err()
+    // gh only knows GitHub.
+    let warning = if account.host == "github" && !account.username.is_empty() && github::gh_available() {
+        github::gh_switch(&account.username).err()
     } else {
         None
     };
@@ -217,8 +222,35 @@ pub fn public_key(store: State<'_, SharedStore>, id: String) -> Result<Option<St
 // Network call: the lock is released before connecting.
 #[tauri::command]
 pub async fn test_ssh(store: State<'_, SharedStore>, id: String) -> Result<SshTest, String> {
-    let key = find_account(&*lock(&store)?, &id)?.ssh_key_path;
-    tauri::async_runtime::spawn_blocking(move || ssh::test_connection(key.as_deref()))
+    let account = find_account(&*lock(&store)?, &id)?;
+    let host = crate::hosts::by_id(&account.host);
+    tauri::async_runtime::spawn_blocking(move || ssh::test_connection(host, account.ssh_key_path.as_deref()))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+// Whether Git Credential Manager holds this account's HTTPS login.
+#[tauri::command]
+pub async fn credential_status(store: State<'_, SharedStore>, id: String) -> Result<bool, String> {
+    let account = find_account(&*lock(&store)?, &id)?;
+    if account.username.is_empty() {
+        return Ok(false);
+    }
+    let host = crate::hosts::by_id(&account.host);
+    tauri::async_runtime::spawn_blocking(move || github::credential_status(host, &account.username))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// Opens GCM's sign-in window for the account's host and stores the login.
+#[tauri::command]
+pub async fn credential_login(store: State<'_, SharedStore>, id: String) -> Result<(), String> {
+    let account = find_account(&*lock(&store)?, &id)?;
+    if account.username.is_empty() {
+        return Err("Set a username for this account first.".into());
+    }
+    let host = crate::hosts::by_id(&account.host);
+    tauri::async_runtime::spawn_blocking(move || github::credential_login(host, &account.username))
         .await
         .map_err(|e| e.to_string())?
 }

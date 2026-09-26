@@ -1,3 +1,4 @@
+use crate::hosts::Host;
 use crate::model::SshTest;
 use crate::proc::{run, stderr, stdout};
 use std::path::{Path, PathBuf};
@@ -31,43 +32,63 @@ pub fn public_key(private_key: &str) -> Result<String, String> {
         .map_err(|e| format!("Could not read {path}: {e}"))
 }
 
-// GitHub answers "Hi <login>! You've successfully authenticated..." on stderr
-// and exits 1 (it gives no shell), so success is read from the message.
-pub fn test_connection(private_key: Option<&str>) -> Result<SshTest, String> {
+// Each host greets a working key differently, and none gives a shell (so ssh
+// exits non-zero even on success): the login is read from the message.
+//   GitHub:    "Hi <login>! You've successfully authenticated..."
+//   GitLab:    "Welcome to GitLab, @<login>!"
+//   Bitbucket: "authenticated via ssh key. ... logged in as <login>."
+pub fn login_from_greeting(text: &str) -> Option<String> {
+    let between = |start: &str, end: char| {
+        text.split(start).nth(1).and_then(|rest| rest.split(end).next()).map(|s| s.trim().to_string())
+    };
+    between("Welcome to GitLab, @", '!')
+        .or_else(|| between("logged in as ", '.'))
+        .or_else(|| between("Hi ", '!'))
+        .filter(|login| !login.is_empty())
+}
+
+pub fn test_connection(host: &Host, private_key: Option<&str>) -> Result<SshTest, String> {
     let mut args: Vec<&str> = vec!["-T"];
     if let Some(key) = private_key {
         args.extend(["-i", key, "-o", "IdentitiesOnly=yes"]);
     }
-    args.extend([
-        "-o",
-        "BatchMode=yes",
-        "-o",
-        "StrictHostKeyChecking=accept-new",
-        "-o",
-        "ConnectTimeout=10",
-        "git@github.com",
-    ]);
+    let target = host.ssh_target();
+    args.extend(["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=10", &target]);
     let out = run("ssh", &args, None)?;
-    let text = format!("{}\n{}", stdout(&out), stderr(&out));
-    let github_user = text
-        .split("Hi ")
-        .nth(1)
-        .and_then(|rest| rest.split('!').next())
-        .map(|s| s.trim().to_string());
-    Ok(match github_user {
-        Some(user) => SshTest {
-            ok: true,
-            message: format!("Connected to GitHub as {user}."),
-            github_user: Some(user),
-        },
+    let text = format!("{}
+{}", stdout(&out), stderr(&out));
+    Ok(match login_from_greeting(&text) {
+        Some(user) => SshTest { ok: true, message: format!("Connected to {} as {user}.", host.name), username: Some(user) },
         None => SshTest {
             ok: false,
-            github_user: None,
+            username: None,
             message: if text.contains("Permission denied") {
-                "GitHub refused the key. Add the public key to the GitHub account first.".into()
+                format!("{} refused the key. Add the public key to the {} account first.", host.name, host.name)
             } else {
-                text.trim().lines().last().unwrap_or("No answer from GitHub.").to_string()
+                text.trim().lines().last().map(str::to_string).unwrap_or_else(|| format!("No answer from {}.", host.name))
             },
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::login_from_greeting;
+
+    #[test]
+    fn reads_the_login_from_each_host_greeting() {
+        assert_eq!(
+            login_from_greeting("Hi Laurenz19! You've successfully authenticated, but GitHub does not provide shell access."),
+            Some("Laurenz19".into())
+        );
+        assert_eq!(login_from_greeting("Welcome to GitLab, @jane.doe!"), Some("jane.doe".into()));
+        assert_eq!(
+            login_from_greeting("authenticated via ssh key.
+
+You can use git to connect to Bitbucket. Shell access is disabled.
+logged in as jdoe."),
+            Some("jdoe".into())
+        );
+        assert_eq!(login_from_greeting("git@github.com: Permission denied (publickey)."), None);
+    }
 }

@@ -2,6 +2,7 @@ import { Search, Settings, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useAppState } from './api'
 import { Avatar, Notice } from './components'
+import { hostInfo } from './hosts'
 import { useT } from './i18n'
 import { AccountEditor, AccountPage, blankAccount } from './views/AccountPage'
 import { DiagnoseView } from './views/DiagnoseView'
@@ -40,7 +41,9 @@ export function MainApp() {
               <Avatar account={a} size={32} />
               <span className="list-text">
                 <span className="list-title">{a.label}</span>
-                <span className="list-sub">{t.nav.folderCount(folders)}</span>
+                <span className="list-sub">
+                  {hostInfo(a.host).name} · {t.nav.folderCount(folders)}
+                </span>
               </span>
               {state.global.accountId === a.id && <span className="badge">{t.nav.global}</span>}
             </button>

@@ -6,14 +6,13 @@
 //   SSH key, GitHub login for HTTPS), fully rewritten on every save.
 // - ~/.gitconfig: one `includeIf "gitdir/i:<folder>/"` per rule, pointing at
 //   an account file. Only entries pointing into ~/.switchly/ are touched.
+use crate::hosts;
 use crate::model::{Account, ConfigValue, EmailCount, RepoFacts, Rule};
 use crate::proc::{run, stderr, stdout};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Output;
 
-const GITHUB_URL: &str = "https://github.com";
-const CREDENTIAL_KEY: &str = "credential.https://github.com.username";
 
 fn git(args: &[&str]) -> Result<Output, String> {
     run("git", args, None)
@@ -82,8 +81,9 @@ pub fn write_account_file(managed_dir: &Path, account: &Account) -> Result<(), S
     let f = to_git_path(&file);
     git_ok(&["config", "--file", &f, "user.name", &account.name])?;
     git_ok(&["config", "--file", &f, "user.email", &account.email])?;
-    if !account.github_user.is_empty() {
-        git_ok(&["config", "--file", &f, CREDENTIAL_KEY, &account.github_user])?;
+    if !account.username.is_empty() {
+        let key = hosts::by_id(&account.host).credential_key();
+        git_ok(&["config", "--file", &f, &key, &account.username])?;
     }
     if let Some(key) = &account.ssh_key_path {
         git_ok(&["config", "--file", &f, "core.sshCommand", &ssh_command(key)])?;
@@ -141,10 +141,13 @@ pub fn global_identity() -> Result<(Option<String>, Option<String>), String> {
 pub fn switch_global(account: &Account) -> Result<(), String> {
     git_ok(&["config", "--global", "user.name", &account.name])?;
     git_ok(&["config", "--global", "user.email", &account.email])?;
-    if account.github_user.is_empty() {
-        unset_global(CREDENTIAL_KEY)?;
+    // Only this account's host changes: switching to a GitLab account keeps
+    // the GitHub login other repos use.
+    let key = hosts::by_id(&account.host).credential_key();
+    if account.username.is_empty() {
+        unset_global(&key)?;
     } else {
-        git_ok(&["config", "--global", CREDENTIAL_KEY, &account.github_user])?;
+        git_ok(&["config", "--global", &key, &account.username])?;
     }
     match &account.ssh_key_path {
         Some(key) => {
@@ -176,10 +179,14 @@ pub fn repo_facts(path: &Path) -> Result<RepoFacts, String> {
     let top_level = stdout(&top);
     let repo = Path::new(&top_level);
 
-    // --get-urlmatch applies URL-scoped sections like credential.https://github.com.*
-    // (it can't be combined with --show-origin).
-    let credential_user = get_value(&["config", "--get-urlmatch", "credential.username", GITHUB_URL], Some(repo))?;
     let remote_url = get_value(&["config", "--get", "remote.origin.url"], Some(repo))?;
+    let remote_host = remote_url.as_deref().and_then(hosts::for_remote);
+    // --get-urlmatch applies URL-scoped sections like credential.https://gitlab.com.*
+    // (it can't be combined with --show-origin). Asked for the remote's host.
+    let credential_user = match remote_host {
+        Some(host) => get_value(&["config", "--get-urlmatch", "credential.username", &host.url()], Some(repo))?,
+        None => None,
+    };
 
     let mut counts: HashMap<String, u32> = HashMap::new();
     let log = run("git", &["log", "-n", "50", "--format=%ae"], Some(repo))?;
@@ -199,6 +206,7 @@ pub fn repo_facts(path: &Path) -> Result<RepoFacts, String> {
         ssh_command: config_value(repo, "core.sshCommand")?,
         top_level: Some(top_level),
         credential_user,
+        remote_host: remote_host.map(|h| h.id.to_string()),
         remote_url,
         recent_emails,
     })
