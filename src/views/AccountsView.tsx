@@ -1,5 +1,5 @@
 import { homeDir, join } from '@tauri-apps/api/path'
-import { open } from '@tauri-apps/plugin-dialog'
+import { ask, open } from '@tauri-apps/plugin-dialog'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
@@ -103,7 +103,13 @@ function AccountEditor({
   }
 
   async function remove(): Promise<void> {
-    if (!confirm(`Delete "${initial.label}"? Its folder rules are removed too. Its SSH key file stays on disk.`)) return
+    // The dialog plugin, not window.confirm(): the webview doesn't reliably
+    // show browser dialogs, which made the button look dead.
+    const ok = await ask(
+      `Delete "${initial.label}"?\n\nIts folder rules are removed too. Its SSH key file stays on disk, and the global git identity isn't changed.`,
+      { title: 'Delete account', kind: 'warning', okLabel: 'Delete', cancelLabel: 'Cancel' }
+    )
+    if (!ok) return
     try {
       await api.deleteAccount(initial.id)
       onDeleted?.()
@@ -157,8 +163,8 @@ function AccountEditor({
         </button>
         {saved && !dirty && <span className="saved">Saved</span>}
         {!isNew && (
-          <button className="btn btn-danger-ghost push-right" onClick={remove}>
-            Delete
+          <button className="btn btn-danger push-right" onClick={remove}>
+            Delete account
           </button>
         )}
       </div>

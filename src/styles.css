@@ -126,6 +126,15 @@ button {
   font-size: 13px;
 }
 
+.btn-danger {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--error-bg);
+}
+
 .btn-danger-ghost {
   border-color: transparent;
   background: transparent;
