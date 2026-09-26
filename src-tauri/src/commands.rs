@@ -71,6 +71,16 @@ pub fn save_account(app: AppHandle, store: State<'_, SharedStore>, account: Acco
     if account.label.is_empty() || account.name.is_empty() || account.email.is_empty() {
         return Err("Label, name and email are required.".into());
     }
+    // GitHub logins are case-insensitive, but Git Credential Manager finds a
+    // stored login only by its exact spelling: "laurenz19" misses "Laurenz19"
+    // and GCM asks to sign in again. Use the spelling GCM already has.
+    if let Some(known) = github::gcm_accounts()
+        .unwrap_or_default()
+        .into_iter()
+        .find(|u| u.eq_ignore_ascii_case(&account.github_user))
+    {
+        account.github_user = known;
+    }
     if s.config.accounts.iter().any(|a| a.id != account.id && a.email.eq_ignore_ascii_case(&account.email)) {
         return Err(format!("Another account already uses {}.", account.email));
     }

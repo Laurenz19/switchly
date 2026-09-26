@@ -20,7 +20,8 @@
         "minHeight": 520,
         "center": true,
         "visible": false,
-        "backgroundColor": "#141319"
+        "backgroundColor": "#141319",
+        "maximizable": false
       },
       {
         "label": "popup",
