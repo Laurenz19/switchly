@@ -1,10 +1,10 @@
 import { AppWindow } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage, useAppState } from './api'
-import { Avatar, Notice, shortFolder } from './components'
+import { Avatar, Notice } from './components'
 
 // The small window above the tray icon: see and switch the global account,
-// and glance at which folder uses which account.
+// with each account's folder count.
 export function Popup() {
   const { state } = useAppState()
   const [message, setMessage] = useState<{ kind: 'error' | 'warn'; text: string } | null>(null)
@@ -52,43 +52,33 @@ export function Popup() {
         ) : (
           <>
             <span className="popup-caption">Switch to</span>
-            {state.accounts.map((a) => (
-              <button
-                key={a.id}
-                className={`popup-account ${a.id === state.global.accountId ? 'is-active' : ''}`}
-                onClick={() => switchTo(a.id)}
-              >
-                <Avatar account={a} size={26} />
-                <span className="list-text">
-                  <span className="list-title">{a.label}</span>
-                  <span className="list-sub">{a.email}</span>
-                </span>
-                {a.id === state.global.accountId && <span className="check">✓</span>}
-              </button>
-            ))}
-          </>
-        )}
-        {message && <Notice kind={message.kind}>{message.text}</Notice>}
-
-        {state.rules.length > 0 && (
-          <>
-            <span className="popup-caption">Folder rules</span>
-            {state.rules.map((r) => {
-              const account = state.accounts.find((a) => a.id === r.accountId)
+            {state.accounts.map((a) => {
+              // Only the count: the folders themselves live in the main
+              // window's Folders tab, so the popup stays short.
+              const folders = state.rules.filter((r) => r.accountId === a.id).map((r) => r.folder)
               return (
-                <div className="popup-rule" key={r.folder} title={r.folder}>
-                  <span className="popup-rule-folder">{shortFolder(r.folder)}</span>
-                  {account && (
-                    <span className="popup-rule-account">
-                      <Avatar account={account} size={16} />
-                      {account.label}
-                    </span>
-                  )}
-                </div>
+                <button
+                  key={a.id}
+                  className={`popup-account ${a.id === state.global.accountId ? 'is-active' : ''}`}
+                  onClick={() => switchTo(a.id)}
+                >
+                  <Avatar account={a} size={26} />
+                  <span className="list-text">
+                    <span className="list-title">{a.label}</span>
+                    <span className="list-sub">{a.email}</span>
+                  </span>
+                  <span className="popup-folders" title={folders.join('\n') || undefined}>
+                    {folders.length === 1 ? '1 folder' : `${folders.length} folders`}
+                  </span>
+                  <span className="check" aria-hidden={a.id !== state.global.accountId}>
+                    {a.id === state.global.accountId ? '✓' : ''}
+                  </span>
+                </button>
               )
             })}
           </>
         )}
+        {message && <Notice kind={message.kind}>{message.text}</Notice>}
       </div>
 
       <footer className="popup-footer">

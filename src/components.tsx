@@ -44,9 +44,3 @@ export function EmptyState({ title, children }: { title: string; children?: Reac
     </div>
   )
 }
-
-// The folder a rule points at, shortened for tight spaces: "…/Dev/ClientA".
-export function shortFolder(folder: string): string {
-  const parts = folder.replace(/\/+$/, '').split('/')
-  return parts.length > 3 ? `…/${parts.slice(-2).join('/')}` : parts.join('/')
-}
