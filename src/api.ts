@@ -13,8 +13,10 @@ export const api = {
   // Git always switches. Resolves to the GitHub login the gh CLI isn't signed
   // in to yet (so gh stayed on its previous account), or null.
   switchGlobal: (id: string) => invoke<string | null>('switch_global', { id }),
-  // Opens a terminal on `gh auth login`.
-  ghLogin: () => invoke<void>('gh_login'),
+  // Signs the gh CLI in to `user` (device flow; the code arrives as the
+  // "gh-login-code" event). Resolves once confirmed on GitHub.
+  ghLogin: (user: string) => invoke<void>('gh_login', { user }),
+  ghLoginCancel: () => invoke<void>('gh_login_cancel'),
   generateSshKey: (id: string) => invoke<string>('generate_ssh_key', { id }),
   setSshKey: (id: string, path: string | null) => invoke<void>('set_ssh_key', { id, path }),
   publicKey: (id: string) => invoke<string | null>('public_key', { id }),

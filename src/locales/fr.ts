@@ -204,9 +204,12 @@ export const fr: Messages = {
   gh: {
     notSignedIn: (user) =>
       `Git est passé sur ${user}. Seul GitHub CLI (gh) n'a pas suivi : il n'est pas encore connecté en tant que ${user}.`,
-    setUp: (user) => `Configurer gh pour ${user}`,
-    hint: "Un terminal s'ouvre. Connecte-toi dans le navigateur, et réponds « No » si gh propose d'authentifier Git : Git Credential Manager le fait déjà. Puis refais le switch.",
-    opened: 'Terminal ouvert. Une fois connecté, refais le switch : gh suivra désormais.'
+    signIn: (user) => `Connecter gh en tant que ${user}`,
+    starting: 'Demande du code de connexion à GitHub…',
+    enterCode: (user) => `GitHub s'est ouvert dans ton navigateur. Connecté en tant que ${user}, saisis ce code :`,
+    openPage: 'Rouvrir la page',
+    waiting: 'En attente de ta confirmation sur GitHub…',
+    done: (user) => `gh est connecté en tant que ${user}. Il suivra désormais tes changements de compte.`
   },
 
   updates: {

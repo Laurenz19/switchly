@@ -73,6 +73,7 @@ pub fn run() {
             commands::set_language,
             commands::set_guard,
             commands::gh_login,
+            commands::gh_login_cancel,
             commands::open_main,
             commands::hide_popup,
             commands::resize_popup,

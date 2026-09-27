@@ -206,9 +206,12 @@ export const en = {
   gh: {
     notSignedIn: (user: string) =>
       `Git switched to ${user}. Only the GitHub CLI (gh) didn't: it isn't signed in as ${user} yet.`,
-    setUp: (user: string) => `Set up gh for ${user}`,
-    hint: 'A terminal opens. Sign in in the browser, and answer "No" if gh asks to authenticate Git: Git Credential Manager already does. Then switch again.',
-    opened: 'Terminal opened. Once you are signed in there, switch again: gh will follow from now on.'
+    signIn: (user: string) => `Sign gh in as ${user}`,
+    starting: 'Getting a sign-in code from GitHub…',
+    enterCode: (user: string) => `GitHub opened in your browser. Signed in there as ${user}, enter this code:`,
+    openPage: 'Open the page again',
+    waiting: 'Waiting for you to confirm on GitHub…',
+    done: (user: string) => `gh is signed in as ${user}. It will follow your switches from now on.`
   },
 
   updates: {

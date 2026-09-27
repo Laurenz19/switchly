@@ -314,15 +314,41 @@ pub fn set_language(app: AppHandle, store: State<'_, SharedStore>, lang: String)
     Ok(())
 }
 
-// Opens a terminal on `gh auth login`: gh signs in through the browser and
-// asks questions there, so it can't run hidden.
+#[derive(Clone, serde::Serialize)]
+struct GhCode {
+    code: String,
+    url: &'static str,
+}
+
+// Signs gh in to `user` inside Switchly: the one-time code is sent to the UI
+// ("gh-login-code"), which shows it and opens GitHub's page. Resolves once the
+// user confirmed on GitHub, and checks gh really signed in to `user`.
 #[tauri::command]
-pub fn gh_login() -> Result<(), String> {
-    crate::proc::command("cmd")
-        .args(["/c", "start", "gh auth login", "cmd", "/k", "gh", "auth", "login", "--hostname", "github.com", "--web", "--skip-ssh-key", "--git-protocol", "https"])
-        .spawn()
-        .map(|_| ())
-        .map_err(|e| format!("Could not open a terminal: {e}"))
+pub async fn gh_login(app: AppHandle, user: String) -> Result<(), String> {
+    let emitter = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        github::gh_login_device(|code| {
+            let _ = emitter.emit("gh-login-code", GhCode { code: code.to_string(), url: github::GH_DEVICE_URL });
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    let active = github::gh_active_user().unwrap_or_default();
+    if !active.eq_ignore_ascii_case(&user) {
+        return Err(format!(
+            "gh signed in as {active}, not {user}: the browser was signed in to another GitHub account. Sign in there as {user}, then try again."
+        ));
+    }
+    let store = app.state::<SharedStore>();
+    let s = lock(&store)?;
+    changed(&app, &s);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn gh_login_cancel() {
+    github::gh_login_cancel();
 }
 
 #[tauri::command]

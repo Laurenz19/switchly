@@ -334,6 +334,28 @@ select:focus-visible {
   opacity: 0.85;
 }
 
+.gh-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.gh-code {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-pane);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  user-select: all;
+}
+
+.gh-error {
+  color: var(--error);
+}
+
 .update-banner {
   display: flex;
   align-items: center;

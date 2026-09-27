@@ -106,3 +106,81 @@ pub fn credential_login(host: &Host, username: &str) -> Result<(), String> {
         Err(format!("Signed in, but the login couldn't be saved: {}", stderr(&stored)))
     }
 }
+
+// The gh sign-in in progress, so the UI can cancel it.
+static GH_LOGIN_PID: std::sync::Mutex<Option<u32>> = std::sync::Mutex::new(None);
+
+pub const GH_DEVICE_URL: &str = "https://github.com/login/device";
+
+// "! One-time code (ABCD-1234) copied to clipboard" or
+// "! First copy your one-time code: ABCD-1234", depending on gh's version.
+pub fn device_code(line: &str) -> Option<String> {
+    if !line.to_lowercase().contains("code") {
+        return None;
+    }
+    line.split(|c: char| !c.is_ascii_alphanumeric() && c != '-')
+        .find(|w| {
+            let b = w.as_bytes();
+            b.len() == 9 && b[4] == b'-' && w.chars().filter(|c| *c != '-').all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
+        })
+        .map(str::to_string)
+}
+
+// Signs gh in to github.com through the device flow, without a terminal:
+// run non-interactively, gh prints a one-time code and waits until the user
+// confirms it on GitHub. `on_code` gets the code as soon as gh shows it.
+// Git's own credentials aren't touched: non-interactive gh doesn't set
+// itself up as git's credential helper, so Git Credential Manager stays.
+pub fn gh_login_device(on_code: impl Fn(&str)) -> Result<(), String> {
+    use std::io::{BufRead, BufReader};
+    let mut child = command("gh")
+        .args(["auth", "login", "--hostname", "github.com", "--web", "--skip-ssh-key", "--git-protocol", "https"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Could not run gh: {e}"))?;
+    if let Ok(mut pid) = GH_LOGIN_PID.lock() {
+        *pid = Some(child.id());
+    }
+    let mut last = String::new();
+    if let Some(err) = child.stderr.take() {
+        for line in BufReader::new(err).lines().map_while(Result::ok) {
+            if let Some(code) = device_code(&line) {
+                on_code(&code);
+            }
+            if !line.trim().is_empty() {
+                last = line.trim().to_string();
+            }
+        }
+    }
+    let status = child.wait().map_err(|e| format!("gh sign-in failed: {e}"));
+    if let Ok(mut pid) = GH_LOGIN_PID.lock() {
+        *pid = None;
+    }
+    if status?.success() {
+        Ok(())
+    } else {
+        Err(format!("The gh sign-in didn't complete. {last}"))
+    }
+}
+
+pub fn gh_login_cancel() {
+    let pid = GH_LOGIN_PID.lock().ok().and_then(|mut p| p.take());
+    if let Some(pid) = pid {
+        let _ = run("taskkill", &["/PID", &pid.to_string(), "/T", "/F"], None);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::device_code;
+
+    #[test]
+    fn reads_the_device_code_from_both_gh_formats() {
+        assert_eq!(device_code("! One-time code (AB12-CD34) copied to clipboard"), Some("AB12-CD34".into()));
+        assert_eq!(device_code("! First copy your one-time code: 9F3A-77QZ"), Some("9F3A-77QZ".into()));
+        assert_eq!(device_code("Open this URL to continue in your web browser: https://github.com/login/device"), None);
+        assert_eq!(device_code("- Logged in as Laurenz19"), None);
+    }
+}
