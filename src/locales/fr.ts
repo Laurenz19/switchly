@@ -201,6 +201,14 @@ export const fr: Messages = {
     changesKeys: '{file} : les clés que tu crées ici. Supprimer un compte ne supprime jamais sa clé.'
   },
 
+  gh: {
+    notSignedIn: (user) =>
+      `Git est passé sur ${user}. Seul GitHub CLI (gh) n'a pas suivi : il n'est pas encore connecté en tant que ${user}.`,
+    setUp: (user) => `Configurer gh pour ${user}`,
+    hint: "Un terminal s'ouvre. Connecte-toi dans le navigateur, et réponds « No » si gh propose d'authentifier Git : Git Credential Manager le fait déjà. Puis refais le switch.",
+    opened: 'Terminal ouvert. Une fois connecté, refais le switch : gh suivra désormais.'
+  },
+
   updates: {
     title: 'Mises à jour',
     version: (v) => `Switchly ${v}`,

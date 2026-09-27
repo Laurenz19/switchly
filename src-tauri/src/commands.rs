@@ -159,8 +159,9 @@ pub fn set_rules(app: AppHandle, store: State<'_, SharedStore>, rules: Vec<Rule>
     Ok(())
 }
 
-// Shared by the command and the tray menu. Returns a warning when git
-// switched but gh couldn't follow.
+// Shared by the command and the tray menu. Git always switches; the result is
+// the GitHub login gh couldn't switch to because gh isn't signed in to it yet
+// (gh keeps its own accounts), for the UI to offer setting it up.
 pub fn switch_to(app: &AppHandle, id: &str) -> Result<Option<String>, String> {
     let store = app.state::<SharedStore>();
     let s = lock(&store)?;
@@ -168,13 +169,13 @@ pub fn switch_to(app: &AppHandle, id: &str) -> Result<Option<String>, String> {
     git::write_account_file(&s.managed_dir, &account)?;
     git::switch_global(&account, &managed_keys(&s))?;
     // gh only knows GitHub.
-    let warning = if account.host == "github" && !account.username.is_empty() && github::gh_available() {
-        github::gh_switch(&account.username).err()
+    let gh_missing = if account.host == "github" && !account.username.is_empty() && github::gh_available() {
+        github::gh_switch(&account.username).is_err().then(|| account.username.clone())
     } else {
         None
     };
     changed(app, &s);
-    Ok(warning)
+    Ok(gh_missing)
 }
 
 #[tauri::command]
@@ -311,6 +312,17 @@ pub fn set_language(app: AppHandle, store: State<'_, SharedStore>, lang: String)
     let state = build_state(&s);
     tray::refresh(&app, &state, language(&s));
     Ok(())
+}
+
+// Opens a terminal on `gh auth login`: gh signs in through the browser and
+// asks questions there, so it can't run hidden.
+#[tauri::command]
+pub fn gh_login() -> Result<(), String> {
+    crate::proc::command("cmd")
+        .args(["/c", "start", "gh auth login", "cmd", "/k", "gh", "auth", "login", "--hostname", "github.com", "--web", "--skip-ssh-key", "--git-protocol", "https"])
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Could not open a terminal: {e}"))
 }
 
 #[tauri::command]

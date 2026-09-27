@@ -2,6 +2,7 @@ import { AppWindow } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { api, errorMessage, useAppState } from './api'
 import { Avatar, HostBadge, Notice } from './components'
+import { GhNotice } from './GhNotice'
 import { useT } from './i18n'
 
 // The small window above the tray icon: see and switch the global account,
@@ -9,7 +10,8 @@ import { useT } from './i18n'
 export function Popup() {
   const t = useT()
   const { state } = useAppState()
-  const [message, setMessage] = useState<{ kind: 'error' | 'warn'; text: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [ghMissing, setGhMissing] = useState<string | null>(null)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -39,17 +41,17 @@ export function Popup() {
     const observer = new ResizeObserver(measure)
     observer.observe(root)
     return () => observer.disconnect()
-  }, [state, message])
+  }, [state, error, ghMissing])
 
   if (!state) return null
   const global = state.accounts.find((a) => a.id === state.global.accountId)
 
   async function switchTo(id: string): Promise<void> {
     try {
-      const warning = await api.switchGlobal(id)
-      setMessage(warning ? { kind: 'warn', text: warning } : null)
+      setGhMissing(await api.switchGlobal(id))
+      setError(null)
     } catch (e) {
-      setMessage({ kind: 'error', text: errorMessage(e) })
+      setError(errorMessage(e))
     }
   }
 
@@ -105,7 +107,8 @@ export function Popup() {
             })}
           </>
         )}
-        {message && <Notice kind={message.kind}>{message.text}</Notice>}
+        {error && <Notice kind="error">{error}</Notice>}
+        {ghMissing && <GhNotice user={ghMissing} />}
       </div>
 
       <footer className="popup-footer">

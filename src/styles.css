@@ -322,6 +322,18 @@ select:focus-visible {
   padding: 22px 28px;
 }
 
+.gh-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gh-notice .hint {
+  color: inherit;
+  opacity: 0.85;
+}
+
 .update-banner {
   display: flex;
   align-items: center;

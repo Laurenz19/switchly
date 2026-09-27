@@ -203,6 +203,14 @@ export const en = {
     changesKeys: "{file}: keys you create here. Deleting an account never deletes its key."
   },
 
+  gh: {
+    notSignedIn: (user: string) =>
+      `Git switched to ${user}. Only the GitHub CLI (gh) didn't: it isn't signed in as ${user} yet.`,
+    setUp: (user: string) => `Set up gh for ${user}`,
+    hint: 'A terminal opens. Sign in in the browser, and answer "No" if gh asks to authenticate Git: Git Credential Manager already does. Then switch again.',
+    opened: 'Terminal opened. Once you are signed in there, switch again: gh will follow from now on.'
+  },
+
   updates: {
     title: 'Updates',
     version: (v: string) => `Switchly ${v}`,

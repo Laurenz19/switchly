@@ -10,8 +10,11 @@ export const api = {
   deleteAccount: (id: string) => invoke<void>('delete_account', { id }),
   setRules: (rules: Rule[]) => invoke<void>('set_rules', { rules }),
   setGuard: (on: boolean) => invoke<void>('set_guard', { on }),
-  // Resolves to a warning when git switched but the gh CLI couldn't.
+  // Git always switches. Resolves to the GitHub login the gh CLI isn't signed
+  // in to yet (so gh stayed on its previous account), or null.
   switchGlobal: (id: string) => invoke<string | null>('switch_global', { id }),
+  // Opens a terminal on `gh auth login`.
+  ghLogin: () => invoke<void>('gh_login'),
   generateSshKey: (id: string) => invoke<string>('generate_ssh_key', { id }),
   setSshKey: (id: string, path: string | null) => invoke<void>('set_ssh_key', { id, path }),
   publicKey: (id: string) => invoke<string | null>('public_key', { id }),

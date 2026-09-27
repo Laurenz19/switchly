@@ -72,6 +72,7 @@ pub fn run() {
             commands::diagnose_repo,
             commands::set_language,
             commands::set_guard,
+            commands::gh_login,
             commands::open_main,
             commands::hide_popup,
             commands::resize_popup,

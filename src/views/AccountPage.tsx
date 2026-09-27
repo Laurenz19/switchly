@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api'
+import { GhNotice } from '../GhNotice'
 import { ACCOUNT_COLORS, Avatar, EmptyState, HostBadge, Notice, Section } from '../components'
 import { HOSTS, hostInfo } from '../hosts'
 import { fill, useT } from '../i18n'
@@ -46,16 +47,18 @@ type Tab = 'identity' | 'folders' | 'connections'
 export function AccountPage({ account, state, onDeleted }: { account: Account; state: AppState; onDeleted: () => void }) {
   const t = useT()
   const [tab, setTab] = useState<Tab>('folders')
-  const [message, setMessage] = useState<{ kind: 'error' | 'warn'; text: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  // The GitHub login gh didn't follow to on the last switch.
+  const [ghMissing, setGhMissing] = useState<string | null>(null)
   const isGlobal = state.global.accountId === account.id
   const folderCount = state.rules.filter((r) => r.accountId === account.id).length
 
   async function makeGlobal(): Promise<void> {
     try {
-      const warning = await api.switchGlobal(account.id)
-      setMessage(warning ? { kind: 'warn', text: warning } : null)
+      setGhMissing(await api.switchGlobal(account.id))
+      setError(null)
     } catch (e) {
-      setMessage({ kind: 'error', text: errorMessage(e) })
+      setError(errorMessage(e))
     }
   }
 
@@ -89,7 +92,8 @@ export function AccountPage({ account, state, onDeleted }: { account: Account; s
           </button>
         )}
       </header>
-      {message && <Notice kind={message.kind}>{message.text}</Notice>}
+      {error && <Notice kind="error">{error}</Notice>}
+      {ghMissing && <GhNotice user={ghMissing} />}
 
       <div className="tabs" role="tablist" aria-label={t.account.sections}>
         {tabs.map((tb) => (
