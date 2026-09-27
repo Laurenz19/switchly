@@ -5,6 +5,7 @@ mod guard;
 mod hosts;
 mod model;
 mod proc;
+mod setup;
 mod ssh;
 mod store;
 mod tray;
@@ -31,6 +32,9 @@ pub fn run() {
             Some(vec![HIDDEN_FLAG]),
         ))
         .setup(|app| {
+            // A Git installed since the last Windows sign-in may not be on
+            // the PATH this process got; see setup::refresh_path.
+            setup::refresh_path();
             let handle = app.handle();
             let store = store::Store::load(&handle.path().app_config_dir()?, handle.path().home_dir()?);
             let state = commands::build_state(&store);
@@ -73,6 +77,8 @@ pub fn run() {
             commands::set_language,
             commands::set_guard,
             commands::gh_login,
+            commands::requirements,
+            commands::install_tool,
             commands::gh_login_cancel,
             commands::open_main,
             commands::hide_popup,

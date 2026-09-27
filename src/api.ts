@@ -2,7 +2,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { useCallback, useEffect, useState } from 'react'
-import type { Account, AppState, RepoFacts, Rule, SshTest } from './types'
+import type { Account, AppState, RepoFacts, Requirements, Rule, SshTest } from './types'
 
 export const api = {
   getState: () => invoke<AppState>('get_state'),
@@ -17,6 +17,9 @@ export const api = {
   // "gh-login-code" event). Resolves once confirmed on GitHub.
   ghLogin: (user: string) => invoke<void>('gh_login', { user }),
   ghLoginCancel: () => invoke<void>('gh_login_cancel'),
+  requirements: () => invoke<Requirements>('requirements'),
+  // Installs Git or gh with winget; resolves to the updated requirements.
+  installTool: (tool: 'git' | 'gh') => invoke<Requirements>('install_tool', { tool }),
   generateSshKey: (id: string) => invoke<string>('generate_ssh_key', { id }),
   setSshKey: (id: string, path: string | null) => invoke<void>('set_ssh_key', { id, path }),
   publicKey: (id: string) => invoke<string | null>('public_key', { id }),

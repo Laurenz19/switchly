@@ -347,6 +347,23 @@ pub async fn gh_login(app: AppHandle, user: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub async fn requirements() -> Result<crate::setup::Requirements, String> {
+    tauri::async_runtime::spawn_blocking(crate::setup::check).await.map_err(|e| e.to_string())
+}
+
+// Installs Git or the GitHub CLI (winget), then refreshes everything that
+// depends on it.
+#[tauri::command]
+pub async fn install_tool(app: AppHandle, tool: String) -> Result<crate::setup::Requirements, String> {
+    tauri::async_runtime::spawn_blocking(move || crate::setup::install(&tool))
+        .await
+        .map_err(|e| e.to_string())??;
+    let store = app.state::<SharedStore>();
+    changed(&app, &*lock(&store)?);
+    Ok(crate::setup::check())
+}
+
+#[tauri::command]
 pub fn gh_login_cancel() {
     github::gh_login_cancel();
 }

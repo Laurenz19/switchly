@@ -76,6 +76,16 @@ export interface RepoFacts {
   recentEmails: EmailCount[]
 }
 
+// The tools Switchly relies on (src-tauri/src/setup.rs).
+export interface Requirements {
+  git: boolean
+  gcm: boolean
+  ssh: boolean
+  gh: boolean
+  // Whether Git and gh can be installed from Switchly.
+  winget: boolean
+}
+
 export interface SshTest {
   ok: boolean
   // The login the key authenticates as, when it worked.

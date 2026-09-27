@@ -212,6 +212,26 @@ export const fr: Messages = {
     done: (user) => `gh est connecté en tant que ${user}. Il suivra désormais tes changements de compte.`
   },
 
+  requirements: {
+    title: 'Prérequis',
+    hint: 'Les outils sur lesquels Switchly s’appuie.',
+    blockingHint: "Switchly a besoin de Git pour Windows : c'est lui que Switchly configure. Installe-le pour commencer.",
+    names: { git: 'Git pour Windows', gcm: 'Git Credential Manager', ssh: 'OpenSSH', gh: 'GitHub CLI (gh)' },
+    optional: 'Facultatif',
+    installed: 'Installé',
+    missing: {
+      git: 'Manquant : Switchly en a besoin pour tout.',
+      gcm: 'Manquant : il gère les connexions HTTPS et est livré avec Git pour Windows. Réinstalle Git avec ses options par défaut.',
+      ssh: 'Manquant : utile seulement pour les remotes git@… Ajoute « Client OpenSSH » dans Paramètres Windows → Fonctionnalités facultatives.',
+      gh: "Non installé : changer de compte global peut aussi changer gh, si tu l'utilises."
+    },
+    install: 'Installer',
+    installing: 'Installation…',
+    download: 'Télécharger',
+    adminPrompt: "Windows peut demander l'autorisation administrateur : accepte-la pour continuer. Cela peut prendre une minute.",
+    recheck: 'Vérifier à nouveau'
+  },
+
   updates: {
     title: 'Mises à jour',
     version: (v) => `Switchly ${v}`,

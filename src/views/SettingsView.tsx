@@ -7,10 +7,19 @@ import { api, errorMessage } from '../api'
 import { Notice, Section } from '../components'
 import { fill, LANGUAGES, type LangPref, messagesFor, setLangPref, useLangPref, useT } from '../i18n'
 import { type ThemePref, useThemePref } from '../theme'
-import type { AppState } from '../types'
+import type { AppState, Requirements } from '../types'
+import { RequirementsView } from './RequirementsView'
 import { findUpdate, installUpdate, updatesEnabled } from '../updater'
 
-export function SettingsView({ state }: { state: AppState }) {
+export function SettingsView({
+  state,
+  req,
+  onReqChange
+}: {
+  state: AppState
+  req: Requirements | null
+  onReqChange: (r: Requirements) => void
+}) {
   const t = useT()
   const lang = useLangPref()
   const [theme, setTheme] = useThemePref()
@@ -218,6 +227,8 @@ export function SettingsView({ state }: { state: AppState }) {
           <li>{fill(t.settings.changesKeys, { file: <code>~/.ssh/id_ed25519_switchly_*</code> })}</li>
         </ul>
       </Section>
+
+      {req && <RequirementsView req={req} onChange={onReqChange} />}
 
       {error && <Notice kind="error">{error}</Notice>}
     </div>

@@ -23,6 +23,8 @@ Work with several Git accounts, like a personal GitHub, a work GitLab and a clie
 - **OpenSSH**, only for SSH remotes. It's built into Windows 10 and 11.
 - **GitHub CLI** (`gh`), optional: when it's installed, switching the global account also switches `gh`.
 
+**Missing Git? Switchly installs it.** The `.exe` installer offers to install Git for Windows when it isn't there, with **winget** (the package manager built into Windows 10 and 11). If you skip it, or install with the `.msi`, Switchly shows a **Requirements** screen at first launch with an **Install** button for Git and one for the GitHub CLI. It's also in **Settings**. Windows may ask for administrator permission while Git installs.
+
 ## Install
 
 Download the latest installer from **[Releases](../../releases/latest)**:
@@ -126,7 +128,7 @@ npm run icon          # regenerate every icon size from src-tauri/icons/source/i
 cd src-tauri && cargo test
 ```
 
-`tauri build` also signs the update packages, so it needs the updater's private key: set `TAURI_SIGNING_PRIVATE_KEY_PATH` to it, or build without update packages with `npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'`.
+`tauri build` also signs the update packages, so it needs the updater's private key: set `TAURI_SIGNING_PRIVATE_KEY` to its path, or build without update packages with `npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'`.
 
 On an ARM64 PC without the MSVC ARM64 tools, pin the x64 toolchain for this project: `rustup override set stable-x86_64-pc-windows-msvc` in `src-tauri`.
 

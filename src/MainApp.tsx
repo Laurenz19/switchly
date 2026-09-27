@@ -8,7 +8,10 @@ import { useT } from './i18n'
 import { findUpdate, installUpdate } from './updater'
 import { AccountEditor, AccountPage, blankAccount } from './views/AccountPage'
 import { DiagnoseView } from './views/DiagnoseView'
+import { RequirementsView } from './views/RequirementsView'
 import { SettingsView } from './views/SettingsView'
+import type { Requirements } from './types'
+import { api } from './api'
 
 type Route = { kind: 'account'; id: string } | { kind: 'new' } | { kind: 'diagnose' } | { kind: 'settings' }
 
@@ -19,11 +22,14 @@ export function MainApp() {
   const { state, error } = useAppState()
   const [route, setRoute] = useState<Route | null>(null)
   const [update, setUpdate] = useState<Update | null>(null)
+  const [req, setReq] = useState<Requirements | null>(null)
+  const gitMissing = req !== null && !req.git
   const [updating, setUpdating] = useState(false)
 
   // Once per launch; offline or no release yet just means no banner.
   useEffect(() => {
     findUpdate().then(setUpdate, () => setUpdate(null))
+    api.requirements().then(setReq, () => setReq(null))
   }, [])
 
   // Until the user picks something, show the first account (or the form to
@@ -102,10 +108,11 @@ export function MainApp() {
             </button>
           </div>
         )}
-        {state && account && (
+        {gitMissing && req && <RequirementsView req={req} onChange={setReq} blocking />}
+        {!gitMissing && state && account && (
           <AccountPage key={account.id} account={account} state={state} onDeleted={() => setRoute(null)} />
         )}
-        {state && current.kind === 'new' && (
+        {!gitMissing && state && current.kind === 'new' && (
           <div className="page">
             <AccountEditor
               key="new"
@@ -114,8 +121,10 @@ export function MainApp() {
             />
           </div>
         )}
-        {state && current.kind === 'diagnose' && <DiagnoseView state={state} />}
-        {state && current.kind === 'settings' && <SettingsView state={state} />}
+        {!gitMissing && state && current.kind === 'diagnose' && <DiagnoseView state={state} />}
+        {!gitMissing && state && current.kind === 'settings' && (
+          <SettingsView state={state} req={req} onReqChange={setReq} />
+        )}
       </main>
     </div>
   )
