@@ -1,6 +1,6 @@
 [package]
 name = "switchly"
-version = "0.1.0"
+version = "0.3.1"
 description = "Switch GitHub accounts per folder"
 authors = ["Laurenz19"]
 edition = "2021"

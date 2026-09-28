@@ -144,6 +144,6 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-GitHub Actions (`.github/workflows/release.yml`) type-checks and tests, builds the x64 installers (`.exe` and `.msi`) and the ARM64 installer, and publishes them as a GitHub Release, with the signed update packages and the `latest.json` manifest installed apps check. The tag is the version, so `tauri.conf.json` doesn't need bumping.
+GitHub Actions (`.github/workflows/release.yml`) type-checks and tests, builds the x64 installers (`.exe` and `.msi`) and the ARM64 installer, and publishes them as a GitHub Release, with the signed update packages and the `latest.json` manifest installed apps check. The tag is the version of the release. The version in `package.json`, `tauri.conf.json` and `Cargo.toml` is only what development builds show: set it to the upcoming version.
 
 The updater's private key is the repository secret `TAURI_SIGNING_PRIVATE_KEY`; its public half is in `tauri.conf.json`. **Keep a copy of the private key**: without it, installed apps can't be updated anymore.

@@ -331,6 +331,8 @@ function SshSection({ account }: { account: Account }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // The automatic check when the card opens.
+  const [checking, setChecking] = useState(false)
 
   useEffect(() => {
     setTest(null)
@@ -339,7 +341,22 @@ function SshSection({ account }: { account: Account }) {
       setPublicKey(null)
       setError(errorMessage(e))
     })
-  }, [account.id, account.sshKeyPath])
+    // Check the connection right away, so the card shows "Connected" without
+    // a click. A failure here isn't an error yet: the key may simply not be
+    // on the site; the Connect button explains what to do.
+    let current = true
+    setChecking(true)
+    api
+      .testSsh(account.id)
+      .then((result) => {
+        if (current && result.ok) setTest(result)
+      })
+      .catch(() => {})
+      .finally(() => current && setChecking(false))
+    return () => {
+      current = false
+    }
+  }, [account.id, account.sshKeyPath, account.host])
 
   async function run(action: () => Promise<unknown>): Promise<void> {
     setBusy(true)
@@ -408,7 +425,7 @@ function SshSection({ account }: { account: Account }) {
         )}
         <button className="btn btn-small" disabled={busy} onClick={testConnection}>
           <PlugZap size={14} aria-hidden="true" />
-          {busy ? t.ssh.testing : t.ssh.test}
+          {busy || checking ? t.ssh.connecting : test?.ok ? t.ssh.checkAgain : t.ssh.connect}
         </button>
       </div>
       {publicKey && <p className="hint">{t.ssh.addWhileSignedIn(host.name, user)}</p>}
